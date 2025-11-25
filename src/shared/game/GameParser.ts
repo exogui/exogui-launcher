@@ -125,8 +125,7 @@ export class GameParser {
          * xml root: eXo/eXoDOS/!dos/1Ton
          * Capture dirname `1Ton` and compare that instead
          *  */
-        const parts = fixSlashes(game.rootFolder).split("/");
-        parts.splice(parts.length - 2, 1);
+        const parts = fixSlashes(game.rootFolder).split("/").filter((word) => word[0] != "!");
         const gameDataPath = path.join(exodosPath, parts.join("/"));
         game.installed = fs.existsSync(gameDataPath);
         return game;
