@@ -1,7 +1,7 @@
 import { IAppConfigData } from "@shared/config/interfaces";
 import * as http from "http";
 import * as fs from "fs";
-import * as mime from "mime";
+import { Mime } from "mime";
 import * as path from "path";
 import { getFilePathExtension } from "@shared/Util";
 import { LogFunc } from "@back/types";
@@ -96,7 +96,7 @@ export class FileServer {
                         const filePath = path.join(
                             videosFolder,
                             urlPath.substring(index + 1)
-                        )
+                        );
                         if (filePath.startsWith(videosFolder)) {
                             this._serveFile(req, res, filePath);
                         }
@@ -180,27 +180,36 @@ export class FileServer {
                     res.writeHead(404);
                     res.end();
                 } else {
-                    const contentType = mime.getType(path.extname(filePath)) || "application/octet-stream";
+                    const contentType =
+                        new Mime().getType(path.extname(filePath)) ||
+                        "application/octet-stream";
                     const total = stats.size;
                     const range = req.headers.range;
-    
+
                     if (range) {
                         const parts = range.replace(/bytes=/, "").split("-");
                         const start = parseInt(parts[0], 10);
-                        const end = parts[1] ? parseInt(parts[1], 10) : total - 1;
-                        const chunkSize = (end - start) + 1;
-    
+                        const end = parts[1]
+                            ? parseInt(parts[1], 10)
+                            : total - 1;
+                        const chunkSize = end - start + 1;
+
                         res.writeHead(206, {
                             "Content-Range": `bytes ${start}-${end}/${total}`,
                             "Accept-Ranges": "bytes",
                             "Content-Length": chunkSize,
                             "Content-Type": contentType,
                         });
-    
+
                         if (req.method === "GET") {
-                            const stream = fs.createReadStream(filePath, { start, end });
+                            const stream = fs.createReadStream(filePath, {
+                                start,
+                                end,
+                            });
                             stream.on("error", (error) => {
-                                console.warn(`File server failed to stream file. ${error}`);
+                                console.warn(
+                                    `File server failed to stream file. ${error}`
+                                );
                                 stream.destroy();
                                 if (!res.writableEnded) {
                                     res.end();
@@ -218,7 +227,9 @@ export class FileServer {
                         if (req.method === "GET") {
                             const stream = fs.createReadStream(filePath);
                             stream.on("error", (error) => {
-                                console.warn(`File server failed to stream file. ${error}`);
+                                console.warn(
+                                    `File server failed to stream file. ${error}`
+                                );
                                 stream.destroy();
                                 if (!res.writableEnded) {
                                     res.end();
