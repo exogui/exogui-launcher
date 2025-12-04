@@ -5,6 +5,7 @@ import {
     FieldFilter,
     GameFilter,
 } from "@shared/interfaces";
+import { getDefaultBooleanFilter, getDefaultCompareFilter, getDefaultFieldFilter, getDefaultGameFilter } from '@shared/utils/search';
 
 enum KeyChar {
     MATCHES = ":",
@@ -16,48 +17,6 @@ enum KeyChar {
 const KEY_CHARS = ["=", ":", "<", ">"];
 
 const REPLACEMENT = "awgdty7awgvbduiawdjnujioawd888";
-
-export function getDefaultBooleanFilter(): BooleanFilter {
-    return {
-        installed: undefined,
-    };
-}
-
-export function getDefaultFieldFilter(): FieldFilter {
-    return {
-        generic: [],
-        id: [],
-        title: [],
-        series: [],
-        developer: [],
-        publisher: [],
-        platform: [],
-        genre: [],
-        playMode: [],
-        region: [],
-        rating: [],
-        releaseYear: [],
-    };
-}
-
-export function getDefaultCompareFilter(): CompareFilter {
-    return {};
-}
-
-export function getDefaultGameFilter(): GameFilter {
-    return {
-        subfilters: [],
-        whitelist: getDefaultFieldFilter(),
-        blacklist: getDefaultFieldFilter(),
-        exactWhitelist: getDefaultFieldFilter(),
-        exactBlacklist: getDefaultFieldFilter(),
-        equalTo: getDefaultCompareFilter(),
-        greaterThan: getDefaultCompareFilter(),
-        lessThan: getDefaultCompareFilter(),
-        booleans: getDefaultBooleanFilter(),
-        matchAny: false,
-    };
-}
 
 export function parseUserInput(input: string): GameFilter {
     const filter: GameFilter = {

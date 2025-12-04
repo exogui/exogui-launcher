@@ -1,24 +1,18 @@
 import { BrowsePageLayout } from "@shared/BrowsePageLayout";
 import { Theme } from "@shared/ThemeFile";
 import { ExodosBackendInfo, GamePlaylist } from "@shared/interfaces";
-import { UpdateInfo } from "electron-updater";
 import * as React from "react";
 import { Route, Routes } from "react-router-dom";
 import { Paths } from "./Paths";
 import { GameOrderChangeEvent } from "./components/GameOrder";
+import { AboutPage, AboutPageProps } from "./components/pages/About";
 import BrowsePage, { BrowsePageProps } from "./components/pages/BrowsePage";
 import { NotFoundPage } from "./components/pages/NotFoundPage";
 import {
     ConnectedConfigPage,
     ConnectedConfigPageProps,
 } from "./containers/ConnectedConfigPage";
-import {
-    ConnectedHomePage,
-    ConnectedHomePageProps,
-} from "./containers/ConnectedHomePage";
 import { ConnectedLogsPage } from "./containers/ConnectedLogsPage";
-import { HomePage } from "./components/pages/HomePage";
-import { AboutPage, AboutPageProps } from "./components/pages/About";
 
 export type AppRouterProps = {
     gamesTotal: number;
@@ -35,7 +29,6 @@ export type AppRouterProps = {
     wasNewGameClicked: boolean;
     gameLibrary: string;
     themeList: Theme[];
-    updateInfo: UpdateInfo | undefined;
     exodosBackendInfo: ExodosBackendInfo | undefined;
     currentGameRefreshKey: number;
 };
@@ -44,7 +37,6 @@ export class AppRouter extends React.Component<AppRouterProps> {
     render() {
         const aboutProps: AboutPageProps = {
             exodosBackendInfo: this.props.exodosBackendInfo,
-            updateInfo: this.props.updateInfo,
         };
         const browseProps: BrowsePageProps = {
             playlists: this.props.playlists,

@@ -1,7 +1,7 @@
 import { fixSlashes, getFileServerURL } from "@shared/Util";
 import { GameMedia } from "@shared/game/interfaces";
-import { useMemo, useState } from "react";
-import React = require("react");
+import * as React from 'react';
+import { useEffect, useState } from "react";
 import { OpenIcon } from "./OpenIcon";
 
 export type GameImageCarouselProps = {
@@ -19,16 +19,12 @@ export function GameImageCarousel(props: GameImageCarouselProps) {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(0);
 
     // When the image changes, reset the selected elements
-    React.useEffect(() => {
+    useEffect(() => {
         setWheelPosition(0);
         setSelectedMediaIdx(0);
     }, [props.media]);
 
-    const sortedMedia = useMemo(() => {
-        return prepareGameMedias(props.media, props.platform).sort(
-            sortByMediaCategory
-        );
-    }, [props.media, props.platform]);
+    const sortedMedia = prepareGameMedias(props.media, props.platform).sort(sortByMediaCategory);
 
     // Hover functions to trigger the label to show
     const handleMouseEnter = (index: number) => {
@@ -52,71 +48,66 @@ export function GameImageCarousel(props: GameImageCarouselProps) {
         }
     };
 
-    const imagePreviews = useMemo(() => {
-        return sortedMedia
-            .slice(
-                Math.min(wheelPosition, sortedMedia.length - 1),
-                Math.min(wheelPosition + IMAGE_COUNT, sortedMedia.length)
-            )
-            .map((media, idx) => {
-                const selected = wheelPosition + idx === selectedMediaIdx;
+    const imagePreviews = sortedMedia
+        .slice(
+            Math.min(wheelPosition, sortedMedia.length - 1),
+            Math.min(wheelPosition + IMAGE_COUNT, sortedMedia.length)
+        )
+        .map((media, idx) => {
+            const selected = wheelPosition + idx === selectedMediaIdx;
 
-                let innerElem = undefined;
-                switch (media.type) {
-                    case FormattedGameMediaType.IMAGE:
-                        innerElem = (
-                            <img
+            let innerElem = undefined;
+            switch (media.type) {
+                case FormattedGameMediaType.IMAGE:
+                    innerElem = (
+                        <img
+                            key={props.imgKey}
+                            className="fill-image"
+                            src={`${getFileServerURL()}/${media.path}`}
+                        />
+                    );
+                    break;
+                case FormattedGameMediaType.VIDEO:
+                    innerElem = (
+                        <>
+                            <div className="game-image-carousel-wheel-preview-overlay">
+                                <OpenIcon
+                                    className="game-image-carousel-wheel-preview-overlay--icon"
+                                    icon="play-circle"
+                                />
+                            </div>
+                            <video
                                 key={props.imgKey}
                                 className="fill-image"
-                                src={`${getFileServerURL()}/${media.path}`}
-                            />
-                        );
-                        break;
-                    case FormattedGameMediaType.VIDEO:
-                        innerElem = (
-                            <>
-                                <div className="game-image-carousel-wheel-preview-overlay">
-                                    <OpenIcon
-                                        className="game-image-carousel-wheel-preview-overlay--icon"
-                                        icon="play-circle"
-                                    />
-                                </div>
-                                <video
-                                    key={props.imgKey}
-                                    className="fill-image"
-                                    muted
-                                    src={`${getFileServerURL()}/${
-                                        media.path
+                                muted
+                                src={`${getFileServerURL()}/${media.path
                                     }#t=0.1`}
-                                ></video>
-                            </>
-                        );
-                        break;
-                }
+                            ></video>
+                        </>
+                    );
+                    break;
+            }
 
-                return (
-                    <div
-                        key={`${props.imgKey}-${idx}`}
-                        style={{
-                            width: `${
-                                (1 / IMAGE_COUNT) * (100 - IMAGE_COUNT * 2)
+            return (
+                <div
+                    key={`${props.imgKey}-${idx}`}
+                    style={{
+                        width: `${(1 / IMAGE_COUNT) * (100 - IMAGE_COUNT * 2)
                             }%`,
-                            marginLeft: "1%",
-                            marginRight: "1%",
-                        }}
-                        className={`game-image-carousel-wheel-preview ${
-                            selected &&
-                            "game-image-carousel-wheel-preview--selected"
+                        marginLeft: "1%",
+                        marginRight: "1%",
+                    }}
+                    className={`game-image-carousel-wheel-preview ${selected &&
+                        "game-image-carousel-wheel-preview--selected"
                         }`}
-                        onMouseEnter={() => handleMouseEnter(idx)}
-                        onMouseLeave={handleMouseLeave}
-                        onClick={() => setSelectedMediaIdx(idx + wheelPosition)}
-                    >
-                        {innerElem}
-                    </div>
-                );
-            });
-    }, [wheelPosition, sortedMedia, selectedMediaIdx]);
+                    onMouseEnter={() => handleMouseEnter(idx)}
+                    onMouseLeave={handleMouseLeave}
+                    onClick={() => setSelectedMediaIdx(idx + wheelPosition)}
+                >
+                    {innerElem}
+                </div>
+            );
+        });
 
     if (
         sortedMedia.length === 0 ||
@@ -186,7 +177,7 @@ export function GameImageCarousel(props: GameImageCarouselProps) {
                         {hoveredIndex === null
                             ? selectedMedia.category
                             : sortedMedia[wheelPosition + hoveredIndex]
-                                  .category}
+                                .category}
                     </div>
                 </>
             )}

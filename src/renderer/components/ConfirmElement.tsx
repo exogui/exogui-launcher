@@ -16,7 +16,7 @@ export type ConfirmElementArgs<T = undefined> = {
 
 export type ConfirmElementProps<T = undefined> = {
     /** Function that renders the element (render prop). */
-    children?: (args: ConfirmElementArgs<T>) => JSX.Element | void;
+    children?: (args: ConfirmElementArgs<T>) => React.JSX.Element | void;
     /** Number of activations needed to confirm. */
     activationLimit?: number;
     /** Called when confirmed. */

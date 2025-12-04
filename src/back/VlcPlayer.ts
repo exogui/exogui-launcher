@@ -1,6 +1,5 @@
 import { ChildProcess, spawn } from 'child_process';
 import * as net from 'net';
-import * as path from 'path';
 
 export class VlcPlayer {
     server: ChildProcess | null = null;
@@ -20,11 +19,18 @@ export class VlcPlayer {
         this.server = spawn(this.vlcPath, [
             ...this.args, '-I', 'rc', '--rc-host', `127.0.0.1:${port}`
         ], { windowsHide: true });
+        this.server.on('error', (err) => {
+            console.log(`Error starting VLC server: ${err}`);
+            this.server = null;
+        });
     }
 
     private async connectSocket(): Promise<void> {
         if (this.socket && this.isSocketConnected) {
             return; // Socket is already connected
+        }
+        if (!this.server) {
+            return; // No server running
         }
 
         return new Promise((resolve, reject) => {

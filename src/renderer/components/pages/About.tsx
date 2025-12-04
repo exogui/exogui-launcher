@@ -1,11 +1,8 @@
-import { UpdateInfo } from "electron-updater";
-import * as React from "react";
-import { ExodosBackendInfo } from "@shared/interfaces";
 import { app } from "@electron/remote";
+import { ExodosBackendInfo } from "@shared/interfaces";
+import * as React from "react";
 
 type OwnProps = {
-    /** Whether an update is available to the Launcher */
-    updateInfo: UpdateInfo | undefined;
     /** Callback to initiate the update */
     exodosBackendInfo: ExodosBackendInfo | undefined;
 };
@@ -20,7 +17,7 @@ const links = [
     discordlink,
 ];
 
-const link = (title: string, url: string): JSX.Element => {
+const link = (title: string, url: string): React.JSX.Element => {
     return (
         <a href={url} title={url} target="_blank">
             {title}

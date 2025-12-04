@@ -6,7 +6,7 @@ const opts: VariableStringOptions = {
     closeChar: "}",
 };
 
-type Arg = string | JSX.Element;
+type Arg = string | React.JSX.Element;
 
 export function formatString<T extends string[]>(
     str: string,

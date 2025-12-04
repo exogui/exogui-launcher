@@ -1,13 +1,13 @@
+import { BackOut, ImageChangeData, WrappedResponse } from "@shared/back/types";
+import { LOGOS } from "@shared/constants";
+import { IGameInfo } from "@shared/game/interfaces";
+import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import * as React from "react";
 import { ArrowKeyStepper, AutoSizer, ScrollIndices } from "react-virtualized";
 import {
     Grid,
-    GridCellProps,
-    ScrollParams,
+    GridCellProps
 } from "react-virtualized/dist/es/Grid";
-import { BackOut, ImageChangeData, WrappedResponse } from "@shared/back/types";
-import { LOGOS } from "@shared/constants";
-import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import { GAMES } from "../interfaces";
 import {
     findElementAncestor,
@@ -16,7 +16,6 @@ import {
 } from "../Util";
 import { GameGridItem } from "./GameGridItem";
 import { GameItemContainer } from "./GameItemContainer";
-import { IGameInfo } from "@shared/game/interfaces";
 
 const RENDERER_OVERSCAN = 9;
 const BACK_OVERSCAN = 50;
@@ -44,7 +43,7 @@ export type GameGridProps = {
     /** Height of each cell in the grid (in pixels). */
     cellHeight: number;
     /** Function that renders the elements to show instead of the grid if there are no games (render prop). */
-    noRowsRenderer?: () => JSX.Element;
+    noRowsRenderer?: () => React.JSX.Element;
     /** Called when the user attempts to select a game. */
     onGameSelect: (game?: IGameInfo) => void;
     /** Called when the user attempts to open a context menu (at a game). */
