@@ -1,18 +1,15 @@
-import { UpdateInfo } from "electron-updater";
-import * as React from "react";
-import { Link } from "react-router-dom";
-import { ExodosBackendInfo, GamePlaylist } from "@shared/interfaces";
-import { WithPreferencesProps } from "../../containers/withPreferences";
-import { OpenIcon, OpenIconType } from "../OpenIcon";
-import { BackIn, LaunchExodosContentData } from "@shared/back/types";
 import { app } from "@electron/remote";
 import { englishTranslation } from "@renderer/lang/en";
+import { BackIn, LaunchExodosContentData } from "@shared/back/types";
+import { ExodosBackendInfo, GamePlaylist } from "@shared/interfaces";
+import * as React from "react";
+import { Link } from "react-router-dom";
+import { WithPreferencesProps } from "../../containers/withPreferences";
+import { OpenIcon, OpenIconType } from "../OpenIcon";
 
 type OwnProps = {
     playlists: GamePlaylist[];
     onLaunchGame: (gameId: string) => void;
-    /** Whether an update is available to the Launcher */
-    updateInfo: UpdateInfo | undefined;
     /** Callback to initiate the update */
     exodosBackendInfo: ExodosBackendInfo | undefined;
 };
@@ -193,7 +190,7 @@ export function HomePage(props: HomePageProps) {
         </div>
     );
 
-    const link = (title: string, url: string): JSX.Element => {
+    const link = (title: string, url: string): React.JSX.Element => {
         return (
             <a href={url} title={url}>
                 {title}
@@ -223,7 +220,7 @@ function QuickStartItem(props: {
     icon?: OpenIconType;
     className?: string;
     children?: React.ReactNode;
-}): JSX.Element {
+}) {
     return (
         <li
             className={

@@ -18,15 +18,12 @@ import {
     ThemeListChangeData,
 } from "@shared/back/types";
 import { APP_TITLE } from "@shared/constants";
-import { IGameInfo } from "@shared/game/interfaces";
 import { ExodosBackendInfo, GamePlaylist, WindowIPC } from "@shared/interfaces";
 import { getLibraryItemTitle } from "@shared/library/util";
 import { memoizeOne } from "@shared/memoize";
-import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import { updatePreferencesData } from "@shared/preferences/util";
 import { debounce } from "@shared/utils/debounce";
 import { ipcRenderer } from "electron";
-import { UpdateInfo } from "electron-updater";
 import * as React from "react";
 import { ConnectedProps, connect } from "react-redux";
 import { Paths } from "./Paths";
@@ -89,8 +86,6 @@ export type AppState = {
     gameLayout: BrowsePageLayout;
     /** If the "New Game" button was clicked (silly way of passing the event from the footer the the browse page). */
     wasNewGameClicked: boolean;
-    /** Info of the update, if one was found */
-    updateInfo: UpdateInfo | undefined;
     /** Exodos backend info for displaying at homepage  */
     exodosBackendInfo: ExodosBackendInfo | undefined;
     /** Key to force refresh of current game */
@@ -123,7 +118,6 @@ class App extends React.Component<AppProps, AppState> {
             gameScale: preferencesData.browsePageGameScale,
             gameLayout: preferencesData.browsePageLayout,
             wasNewGameClicked: false,
-            updateInfo: undefined,
             order,
             exodosBackendInfo: undefined,
             currentGameRefreshKey: 0,
@@ -409,7 +403,6 @@ class App extends React.Component<AppProps, AppState> {
             wasNewGameClicked: this.state.wasNewGameClicked,
             gameLibrary: libraryPath,
             themeList: this.state.themeList,
-            updateInfo: this.state.updateInfo,
             exodosBackendInfo: this.state.exodosBackendInfo,
             currentGameRefreshKey: this.state.currentGameRefreshKey,
         };

@@ -1,9 +1,9 @@
-import * as fs from "fs";
 import { GamePlaylistContent, GamePlaylistEntry } from "@shared/interfaces";
 import { Coerce } from "@shared/utils/Coerce";
 import { IObjectParserProp, ObjectParser } from "@shared/utils/ObjectParser";
-import { getDefaultGameFilter } from "@renderer/util/search";
+import { getDefaultGameFilter } from '@shared/utils/search';
 import { XMLParser } from "fast-xml-parser";
+import * as fs from "fs";
 
 const { str } = Coerce;
 

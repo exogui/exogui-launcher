@@ -1,5 +1,5 @@
-import * as React from "react";
 import { memoizeOne } from "@shared/memoize";
+import * as React from "react";
 import { checkIfAncestor } from "../Util";
 import { InputField, InputFieldProps } from "./InputField";
 
@@ -115,7 +115,7 @@ export class DropdownInputField extends React.Component<
     }
 
     /** Renders the list of items in the drop-down menu. */
-    renderItems = memoizeOne<(items: string[]) => JSX.Element[]>(
+    renderItems = memoizeOne<(items: string[]) => React.JSX.Element[]>(
         (items: string[]) => {
             return items.map((text, index) => (
                 <label key={index} data-dropdown-index={index} tabIndex={0}>

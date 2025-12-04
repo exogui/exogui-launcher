@@ -1,5 +1,5 @@
-import { SharedSocket } from "@shared/back/SharedSocket";
 import * as remoteMain from "@electron/remote/main";
+import { SharedSocket } from "@shared/back/SharedSocket";
 import {
     BackIn,
     BackInitArgs,
@@ -26,9 +26,9 @@ import {
     dialog,
     ipcMain,
     IpcMainEvent,
+    screen,
     session,
     shell,
-    screen,
 } from "electron";
 import * as fs from "fs";
 import * as path from "path";
@@ -471,7 +471,7 @@ export function main(init: Init): void {
         // Remove the menu bar
         window.setMenuBarVisibility(false);
         // and load the index.html of the app.
-        window.loadFile(path.join(__dirname, "../window/index.html"));
+        window.loadFile(path.join(__dirname, "../window/renderer.html"));
         // Open the DevTools. Don't open if using a remote debugger (like vscode)
         if (Util.isDev && !process.env.REMOTE_DEBUG) {
             window.webContents.openDevTools();

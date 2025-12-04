@@ -10,23 +10,24 @@ import {
     GetRendererInitDataResponse,
     InitEventData,
     LaunchAddAppData,
+    LaunchExodosContentData,
     LaunchGameData,
     LocaleUpdateData,
     OpenDialogData,
     OpenDialogResponseData,
     OpenExternalData,
     OpenExternalResponseData,
+    PlaylistUpdateData,
     SetLocaleData,
     UpdateConfigData,
     WrappedRequest,
     WrappedResponse,
-    LaunchExodosContentData,
-    PlaylistUpdateData,
 } from "@shared/back/types";
 import { overwriteConfigData } from "@shared/config/util";
 import { IGameInfo } from "@shared/game/interfaces";
 import { GamePlaylist } from "@shared/interfaces";
 import { ILogEntry, ILogPreEntry } from "@shared/Log/interface";
+import { DefaultCommandMapping } from "@shared/mappings/interfaces";
 import { PreferencesFile } from "@shared/preferences/PreferencesFile";
 import {
     defaultPreferencesData,
@@ -35,25 +36,24 @@ import {
 import {
     createErrorProxy,
     deepCopy,
-    isErrorProxy,
     fixSlashes,
+    isErrorProxy,
     readJsonFile,
 } from "@shared/Util";
 import { Coerce } from "@shared/utils/Coerce";
 import { MessageBoxOptions, OpenExternalOptions } from "electron";
+import { EventEmitter } from "events";
 import * as http from "http";
 import * as path from "path";
-import * as WebSocket from "ws";
 import { v4 as uuid } from "uuid";
-import { EventEmitter } from "events";
+import * as WebSocket from "ws";
+import { FileServer } from "./backend/fileServer";
 import { ConfigFile } from "./config/ConfigFile";
 import { loadExecMappingsFile } from "./Execs";
 import { GameLauncher } from "./game/GameLauncher";
+import { PlaylistManager } from "./playlist/PlaylistManager";
 import { BackState } from "./types";
 import { difObjects } from "./util/misc";
-import { FileServer } from "./backend/fileServer";
-import { PlaylistManager } from "./playlist/PlaylistManager";
-import { DefaultCommandMapping } from "@shared/mappings/interfaces";
 import { VlcPlayer } from "./VlcPlayer";
 // Make sure the process.send function is available
 type Required<T> = T extends undefined ? never : T;

@@ -1,19 +1,17 @@
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import {
-    getDefaultBooleanFilter,
-    getDefaultCompareFilter,
-    getDefaultFieldFilter,
     isGameFilterEmpty,
     mergeGameFilters,
     parseAdvancedFilter,
     parseUserInput,
 } from "@renderer/util/search";
 import { deepCopy } from "@shared/Util";
+import { BackIn } from "@shared/back/types";
+import { getOrderFunction } from "@shared/game/GameFilter";
 import { IGameInfo } from "@shared/game/interfaces";
 import { GameFilter, GamePlaylist } from "@shared/interfaces";
 import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
-import { getOrderFunction } from "@shared/game/GameFilter";
-import { BackIn } from "@shared/back/types";
+import { getDefaultBooleanFilter, getDefaultCompareFilter, getDefaultFieldFilter } from '@shared/utils/search';
 import * as path from 'path';
 
 export type ResultsView = {
@@ -176,10 +174,12 @@ const searchSlice = createSlice({
                 view.selectedGame = payload.game
                     ? deepCopy(payload.game)
                     : undefined;
-                window.External.back.send<string>(
-                    BackIn.PLAY_AUDIO_FILE,
-                    path.join(window.External.config.fullExodosPath, view.selectedGame ? view.selectedGame.musicPath: '')
-                );
+                if (view.selectedGame?.musicPath) {
+                    window.External.back.send<string>(
+                        BackIn.PLAY_AUDIO_FILE,
+                        path.join(window.External.config.fullExodosPath, view.selectedGame.musicPath)
+                    );
+                }
             }
         },
         forceSearch(

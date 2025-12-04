@@ -3,6 +3,7 @@ const gulp = require("gulp");
 const builder = require("electron-builder");
 const { Platform, archFromString } = require("electron-builder");
 const { exec } = require("child_process");
+const { createRsbuild, loadConfig } = require('@rsbuild/core');
 
 const packageJson = JSON.parse(fs.readFileSync("./package.json"));
 const config = {
@@ -25,12 +26,20 @@ const config = {
 /* ------ Watch ------ */
 
 gulp.task("watch-back", (done) => {
-    execute("npx tspc --project tsconfig.backend.json --pretty --watch", done);
+    execute("npx swc --strip-leading-paths --no-swcrc --config-file swcrc.back.dev.json --source-maps true -d build src --watch", done);
 });
 
-gulp.task("watch-renderer", (done) => {
-    const mode = config.isRelease ? "production" : "development";
-    execute(`npx webpack --mode "${mode}" --watch`, done);
+gulp.task("watch-renderer", async (done) => {
+    const config = await loadConfig();
+    const rsbuild = await createRsbuild({
+      rsbuildConfig: {
+        ...config.content
+      }
+    });
+    await rsbuild.build({
+      watch: true
+    });
+    done();
 });
 
 gulp.task("watch-static", () => {
@@ -40,26 +49,22 @@ gulp.task("watch-static", () => {
 /* ------ Build ------ */
 
 gulp.task("build-back", (done) => {
-    execute("npx tspc --project tsconfig.backend.json --pretty", done);
+    execute("npx swc --strip-leading-paths --no-swcrc --config-file swcrc.back.prod.json -d build src", done);
 });
 
-gulp.task("build-renderer", (done) => {
-    const mode = config.isRelease ? "production" : "development";
-    execute(`npx webpack --mode "${mode}"`, done);
+gulp.task("build-renderer", async (done) => {
+    const config = await loadConfig();
+    const rsbuild = await createRsbuild({
+      rsbuildConfig: config.content
+    });
+    await rsbuild.build();
+    done();
 });
 
 gulp.task("copy-static", () => {
     return gulp
         .src(config.static.src + "/**/*")
         .pipe(gulp.dest(config.static.dest));
-});
-
-gulp.task("config-install", (done) => {
-    if (config.isStaticInstall) {
-        fs.createFile(".installed", done);
-    } else {
-        fs.remove(".installed", done);
-    }
 });
 
 gulp.task("config-version", (done) => {
@@ -129,7 +134,6 @@ gulp.task(
         "build-back",
         "build-renderer",
         "copy-static",
-        "config-install",
         "config-version",
     ),
 );

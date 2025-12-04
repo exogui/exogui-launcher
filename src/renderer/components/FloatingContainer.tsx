@@ -2,9 +2,8 @@ import * as React from 'react';
 
 type FloatingContainerProps = {
   floatingClassName?: string
-  children: JSX.Element | JSX.Element[];
   onClick?: () => void;
-} & React.HTMLProps<HTMLDivElement>;
+} & React.HTMLProps<HTMLDivElement> & React.PropsWithChildren;
 
 export class FloatingContainer extends React.Component<FloatingContainerProps> {
   render() {

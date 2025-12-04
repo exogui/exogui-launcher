@@ -1,0 +1,28 @@
+{
+  "exclude": [
+    "node_modules/**",
+    "src/renderer/**"
+  ],
+  "module": {
+    "type": "commonjs",
+    "strict": true,
+    "noInterop": true
+  },
+  "jsc": {
+    "target": "esnext",
+    "baseUrl": "./src",
+    "paths": {
+      "@shared/*": [ "./shared/*" ],
+      "@main/*": [ "./main/*" ],
+      "@back/*": [ "./back/*" ],
+      "@renderer/*": [ "./renderer/*" ]
+    },
+    "parser": {
+      "syntax": "typescript",
+      "decorators": true
+    },
+    "transform": {
+      "decoratorMetadata": true
+    }
+  }
+}

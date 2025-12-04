@@ -1,3 +1,5 @@
+import { IGameInfo } from "@shared/game/interfaces";
+import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import * as React from "react";
 import {
     ArrowKeyStepper,
@@ -6,13 +8,11 @@ import {
     ListRowProps,
     ScrollIndices,
 } from "react-virtualized";
-import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import { GAMES } from "../interfaces";
 import { findElementAncestor } from "../Util";
 import { GameItemContainer } from "./GameItemContainer";
 import { GameListHeader } from "./GameListHeader";
 import { GameListItem } from "./GameListItem";
-import { IGameInfo } from "@shared/game/interfaces";
 /** A function that receives an HTML element. */
 type RefFunc<T extends HTMLElement> = (instance: T | null) => void;
 
@@ -31,7 +31,7 @@ export type GameListProps = {
     /** Height of each row in the list (in pixels). */
     rowHeight: number;
     /** Function that renders the elements to show instead of the grid if there are no games (render prop). */
-    noRowsRenderer?: () => JSX.Element;
+    noRowsRenderer?: () => React.JSX.Element;
     /** Called when the user attempts to select a game. */
     onGameSelect: (game?: IGameInfo) => void;
     /** Called when the user attempts to launch a game. */

@@ -1,12 +1,12 @@
-import * as React from "react";
+import { englishTranslation } from "@renderer/lang/en";
 import { GamePlaylist } from "@shared/interfaces";
 import { memoizeOne } from "@shared/memoize";
+import * as React from "react";
 import { WithPreferencesProps } from "../containers/withPreferences";
 import { InputElement } from "./InputField";
 import { OpenIcon } from "./OpenIcon";
 import { PlaylistItemContent } from "./PlaylistContent";
 import { PlaylistItem } from "./PlaylistItem";
-import { englishTranslation } from "@renderer/lang/en";
 
 type OwnProps = {
     playlists: GamePlaylist[];
@@ -107,7 +107,7 @@ export class LeftBrowseSidebar extends React.Component<LeftBrowseSidebarProps> {
                 }
             };
 
-            const elements: JSX.Element[] = [];
+            const elements: React.JSX.Element[] = [];
             for (let i = 0; i < playlists.length; i++) {
                 renderItem(playlists[i], false);
             }
