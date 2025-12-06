@@ -55,7 +55,7 @@ export function eventAggregator<T extends AnyFunction>(
     const eventAggregator: CallableCopy<T> = function (...args) {
         // Check if equal arguments already are in the buffer
         let isUnique = true;
-        for (let item of buffer) {
+        for (const item of buffer) {
             if (equal(item.arguments, args)) {
                 isUnique = false;
                 break;

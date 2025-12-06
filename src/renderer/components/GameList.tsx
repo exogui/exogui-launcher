@@ -210,7 +210,7 @@ export class GameList extends React.Component<GameListProps> {
             if (game) {
                 this.props.onContextMenu(game);
             }
-        };
+        }
     };
 
     /** When a row is starting to be dragged. */
@@ -265,7 +265,7 @@ function findGameIndex(
     gameId: string | undefined
 ): number {
     if (gameId !== undefined && games) {
-        for (let index in games) {
+        for (const index in games) {
             const game = games[index];
             if (game && game.id === gameId) {
                 return (index as any) | 0;

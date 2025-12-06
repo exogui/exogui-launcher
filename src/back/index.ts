@@ -43,7 +43,6 @@ import {
 import { Coerce } from "@shared/utils/Coerce";
 import { MessageBoxOptions, OpenExternalOptions } from "electron";
 import { EventEmitter } from "events";
-import * as http from "http";
 import * as path from "path";
 import { v4 as uuid } from "uuid";
 import * as WebSocket from "ws";
@@ -51,7 +50,10 @@ import { FileServer } from "./backend/fileServer";
 import { ConfigFile } from "./config/ConfigFile";
 import { loadExecMappingsFile } from "./Execs";
 import { GameLauncher } from "./game/GameLauncher";
+import { logFactory } from "./logging";
 import { PlaylistManager } from "./playlist/PlaylistManager";
+import { registerRequestCallbacks } from "./responses";
+import { SocketServer } from "./SocketServer";
 import { BackState } from "./types";
 import { difObjects } from "./util/misc";
 import { VlcPlayer } from "./VlcPlayer";
@@ -60,12 +62,13 @@ type Required<T> = T extends undefined ? never : T;
 const send: Required<typeof process.send> = process.send
     ? process.send.bind(process)
     : () => {
-          throw new Error("process.send is undefined.");
-      };
+        throw new Error("process.send is undefined.");
+    };
 
 const state: BackState = {
     isInitialized: false,
     isExit: false,
+    socketServer: new SocketServer(),
     server: createErrorProxy("server"),
     fileServer: undefined,
     secret: createErrorProxy("secret"),
@@ -95,8 +98,8 @@ const state: BackState = {
     vlcPlayer: createErrorProxy("vlcPlayer"),
 };
 
-const preferencesFilename = "preferences.json";
-const configFilename = "config.json";
+export const preferencesFilename = "preferences.json";
+export const configFilename = "config.json";
 const commandMappingsFilename = "mappings.json";
 
 process.on("message", initialize);
@@ -110,10 +113,13 @@ async function initialize(message: any, _: any): Promise<void> {
     }
     state.isInitialized = true;
 
+    const addLog = (entry: ILogEntry): number => { return state.logs.push(entry) - 1; };
+    (global as any).log = logFactory(state.socketServer, addLog, false);
+
     const content: BackInitArgs = JSON.parse(message);
     state.secret = content.secret;
     state.configFolder = content.configFolder;
-    state.localeCode = content.localeCode;
+    state.localeCode = "unknown";
     state.exePath = content.exePath;
     state.basePath = content.basePath;
 
@@ -163,111 +169,62 @@ async function initialize(message: any, _: any): Promise<void> {
         path.join(state.config.exodosPath, state.config.jsonFolderPath),
         (content) => log({ source: "Launcher", content })
     )
-        .then((data) => {
-            state.execMappings = data;
-        })
-        .catch((error) => {
-            log({
-                source: "Launcher",
-                content: `Failed to load exec mappings file. Ignore if on Windows. - ${error}`,
-            });
-        })
-        .finally(() => {
-            state.init[BackInit.EXEC] = true;
-            state.initEmitter.emit(BackInit.EXEC);
+    .then((data) => {
+        state.execMappings = data;
+    })
+    .catch((error) => {
+        log({
+            source: "Launcher",
+            content: `Failed to load exec mappings file. Ignore if on Windows. - ${error}`,
         });
+    })
+    .finally(() => {
+        state.init[BackInit.EXEC] = true;
+        state.initEmitter.emit(BackInit.EXEC);
+    });
 
     state.fileServer = new FileServer(state.config, log);
     await state.fileServer.start();
 
-    const serverPort = await startMainServer(content.acceptRemote);
-    if (serverPort < 0) {
-        setImmediate(exit);
-    }
+    registerRequestCallbacks(state);
+
+    await startMainServer();
 
     // Initialize VLC player
     try {
         switch (process.platform) {
-            case 'win32': {
-                state.vlcPlayer = new VlcPlayer(path.join(state.config.exodosPath, 'ThirdParty', 'VLC', 'x64', 'vlc.exe'), [],
-                 state.preferences.vlcPort, state.preferences.gameMusicVolume);
+            case "win32": {
+                state.vlcPlayer = new VlcPlayer(path.join(state.config.exodosPath, "ThirdParty", "VLC", "x64", "vlc.exe"), [],
+                    state.preferences.vlcPort, state.preferences.gameMusicVolume);
                 break;
             }
             default: {
-                console.log('Disabled VLC player (unsupported on this operating system)');
+                console.log("Disabled VLC player (unsupported on this operating system)");
                 break;
             }
         }
     } catch (err) {
         log({
-            source: 'VLC',
+            source: "VLC",
             content: `${err}`
         });
         console.log(`Error starting VLC server: ${err}`);
     }
 
-    send(serverPort);
+    send(state.socketServer.port);
 }
 
-const startMainServer = async (acceptRemote: boolean): Promise<number> =>
-    new Promise<number>((resolve) => {
-        const minPort = state.config.backPortMin;
-        const maxPort = state.config.backPortMax;
+async function startMainServer() {
+    await state.socketServer.listen(state.config.backPortMin, state.config.backPortMax, "localhost");
 
-        let port: number = minPort - 1;
-        let server: WebSocket.Server | undefined;
-        tryListen();
+    if (state.socketServer.port < 0) {
+        console.log("Back - Failed to open Socket Server, Exiting...");
+        setImmediate(() => exit());
+        return;
+    }
 
-        function tryListen() {
-            if (server) {
-                server.off("error", onError);
-                server.off("listening", onceListening);
-            }
-
-            if (port++ < maxPort) {
-                server = new WebSocket.Server({
-                    host: acceptRemote ? undefined : "127.0.0.1",
-                    port: port,
-                });
-                server.on("error", onError);
-                server.on("listening", onceListening);
-            } else {
-                done(
-                    new Error(
-                        `Failed to open server. All attempted ports are already in use (Ports: ${minPort} - ${maxPort}).`
-                    )
-                );
-            }
-        }
-
-        function onError(error: Error): void {
-            if ((error as any).code === "EADDRINUSE") {
-                tryListen();
-            } else {
-                done(error);
-            }
-        }
-        function onceListening() {
-            done(undefined);
-        }
-        function done(error: Error | undefined) {
-            if (server) {
-                server.off("error", onError);
-                server.off("listening", onceListening);
-                state.server = server;
-                state.server.on("connection", onConnect);
-            }
-            if (error) {
-                log({
-                    source: "Back",
-                    content: "Failed to open WebSocket server.\n" + error,
-                });
-                resolve(-1);
-            } else {
-                resolve(port);
-            }
-        }
-    });
+    console.log("Back - Opened Websocket");
+}
 
 async function initializePlaylistManager() {
     const playlistFolder = path.join(
@@ -278,7 +235,7 @@ async function initializePlaylistManager() {
     const onPlaylistAddOrUpdate = function (playlist: GamePlaylist): void {
         // Clear all query caches that uses this playlist
         const hashes = Object.keys(state.queries);
-        for (let hash of hashes) {
+        for (const hash of hashes) {
             const cache = state.queries[hash];
             if (cache.query.playlistId === playlist.filename) {
                 delete state.queries[hash]; // Clear query from cache
@@ -299,21 +256,6 @@ async function initializePlaylistManager() {
 
     state.init[BackInit.PLAYLISTS] = true;
     state.initEmitter.emit(BackInit.PLAYLISTS);
-}
-
-function onConnect(
-    this: WebSocket.Server,
-    socket: WebSocket,
-    _: http.IncomingMessage
-): void {
-    socket.onmessage = function onAuthMessage(event) {
-        if (event.data === state.secret) {
-            socket.onmessage = onMessageWrap;
-            socket.send("auth successful"); // (reply with some garbage data)
-        } else {
-            socket.close();
-        }
-    };
 }
 
 async function onMessageWrap(event: WebSocket.MessageEvent) {
@@ -405,7 +347,7 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
         case BackIn.INIT_LISTEN:
             {
                 const done: BackInit[] = [];
-                for (let key in state.init) {
+                for (const key in state.init) {
                     const init: BackInit = key as any;
                     if (state.init[init]) {
                         done.push(init);
@@ -469,7 +411,6 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                             false,
                         mappings: state.commandMappings,
                         execMappings: state.execMappings,
-                        log: log,
                         openDialog: openDialog(event.target),
                         openExternal: openExternal(event.target),
                     });
@@ -496,8 +437,7 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                 GameLauncher.launchCommand(
                     appPath,
                     "",
-                    state.commandMappings,
-                    log
+                    state.commandMappings
                 );
                 respond(event.target, {
                     id: req.id,
@@ -525,7 +465,6 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                         ),
                         execMappings: state.execMappings,
                         mappings: state.commandMappings,
-                        log,
                         openDialog: openDialog(event.target),
                         openExternal: openExternal(event.target),
                     });
@@ -554,7 +493,6 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                         ),
                         mappings: state.commandMappings,
                         execMappings: state.execMappings,
-                        log,
                         openDialog: openDialog(event.target),
                         openExternal: openExternal(event.target),
                     });
@@ -605,7 +543,7 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                     }
                 } catch (err) {
                     log({
-                        source: 'VLC',
+                        source: "VLC",
                         content: `${err}`
                     });
                     console.log(err);
@@ -623,7 +561,7 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                     }
                 } catch (err) {
                     log({
-                        source: 'VLC',
+                        source: "VLC",
                         content: `${err}`
                     });
                     console.log(err);
@@ -637,7 +575,7 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
                     state.vlcPlayer?.setVol(req.data);
                 } catch (err) {
                     log({
-                        source: 'VLC',
+                        source: "VLC",
                         content: `${err}`
                     });
                     console.log(err);
@@ -690,7 +628,7 @@ async function onMessage(event: WebSocket.MessageEvent): Promise<void> {
 }
 
 /** Exit the process cleanly. */
-function exit() {
+export function exit() {
     if (!state.isExit) {
         state.isExit = true;
 
@@ -699,16 +637,16 @@ function exit() {
             isErrorProxy(state.server)
                 ? undefined
                 : new Promise<void>((resolve) =>
-                      state.server.close((error) => {
-                          if (error) {
-                              console.warn(
-                                  "An error occurred whie closing the WebSocket server.",
-                                  error
-                              );
-                          }
-                          resolve();
-                      })
-                  ),
+                    state.server.close((error) => {
+                        if (error) {
+                            console.warn(
+                                "An error occurred whie closing the WebSocket server.",
+                                error
+                            );
+                        }
+                        resolve();
+                    })
+                ),
             // Close file server
             new Promise<void>((resolve) =>
                 state.fileServer?.server.close((error) => {
@@ -728,21 +666,7 @@ function exit() {
 }
 
 export function onGameUpdated(game: IGameInfo): void {
-    if (!isErrorProxy(state.server)) {
-        const res: WrappedResponse<IGameInfo> = {
-            id: "",
-            type: BackOut.GAME_CHANGE,
-            data: game,
-        };
-        const message = JSON.stringify(res);
-        state.server.clients.forEach((socket) => {
-            if (socket.onmessage === onMessageWrap) {
-                console.log(`Broadcast: ${BackOut[res.type]}`);
-                // (Check if authorized)
-                socket.send(message);
-            }
-        });
-    }
+    state.socketServer.broadcast(BackOut.GAME_CHANGE, game);
 }
 
 function respond<T>(target: WebSocket, response: WrappedResponse<T>): void {
@@ -774,16 +698,14 @@ function log(preEntry: ILogPreEntry, id?: string): void {
 
     if (typeof entry.source !== "string") {
         console.warn(
-            `Type Warning! A log entry has a source of an incorrect type!\n  Type: "${typeof entry.source}"\n  Value: "${
-                entry.source
+            `Type Warning! A log entry has a source of an incorrect type!\n  Type: "${typeof entry.source}"\n  Value: "${entry.source
             }"`
         );
         entry.source = entry.source + "";
     }
     if (typeof entry.content !== "string") {
         console.warn(
-            `Type Warning! A log entry has content of an incorrect type!\n  Type: "${typeof entry.content}"\n  Value: "${
-                entry.content
+            `Type Warning! A log entry has content of an incorrect type!\n  Type: "${typeof entry.content}"\n  Value: "${entry.content
             }"`
         );
         entry.content = entry.content + "";
@@ -874,7 +796,7 @@ function parseWrappedRequest(
         return [
             undefined,
             new Error(
-                'Failed to parse WrappedRequest. Failed to convert "data" into a string.'
+                "Failed to parse WrappedRequest. Failed to convert \"data\" into a string."
             ),
         ];
     }
@@ -886,7 +808,7 @@ function parseWrappedRequest(
     } catch (error) {
         if (error && typeof error === "object" && "message" in error) {
             error.message =
-                'Failed to parse WrappedRequest. Failed to convert "data" into an object.\n' +
+                "Failed to parse WrappedRequest. Failed to convert \"data\" into an object.\n" +
                 Coerce.str(error.message);
         }
         return [undefined, error as Error];

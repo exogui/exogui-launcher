@@ -1,5 +1,3 @@
-import { BackOut, ImageChangeData, WrappedResponse } from "@shared/back/types";
-import { LOGOS } from "@shared/constants";
 import { IGameInfo } from "@shared/game/interfaces";
 import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import * as React from "react";
@@ -11,8 +9,7 @@ import {
 import { GAMES } from "../interfaces";
 import {
     findElementAncestor,
-    getGameThumbnailUrl,
-    getGameTitleScreenshotUrl,
+    getGameThumbnailUrl
 } from "../Util";
 import { GameGridItem } from "./GameGridItem";
 import { GameItemContainer } from "./GameItemContainer";
@@ -75,7 +72,6 @@ export class GameGrid extends React.Component<GameGridProps> {
     currentGamesCount: number = 0;
 
     componentDidMount(): void {
-        window.External.back.on("message", this.onResponse);
         this.updateCssVars();
         this.updatePropRefs();
     }
@@ -83,10 +79,6 @@ export class GameGrid extends React.Component<GameGridProps> {
     componentDidUpdate(): void {
         this.updateCssVars();
         this.updatePropRefs();
-    }
-
-    componentWillUnmount(): void {
-        window.External.back.off("message", this.onResponse);
     }
 
     render() {
@@ -217,35 +209,6 @@ export class GameGrid extends React.Component<GameGridProps> {
         );
     };
 
-    onResponse = (res: WrappedResponse) => {
-        if (res.type === BackOut.IMAGE_CHANGE) {
-            const resData: ImageChangeData = res.data;
-
-            // Update the image in the browsers cache
-            if (resData.folder === LOGOS) {
-                fetch(
-                    getGameTitleScreenshotUrl(resData.folder, resData.id)
-                ).then(() => {
-                    // Refresh the image for the game(s) that uses it
-                    const elements =
-                        document.getElementsByClassName("game-grid-item");
-                    for (let i = 0; i < elements.length; i++) {
-                        const item = elements.item(i);
-                        if (item && GameGridItem.getId(item) === resData.id) {
-                            const img: HTMLElement | null = item.querySelector(
-                                ".game-grid-item__thumb__image"
-                            ) as any;
-                            if (img) {
-                                const val = img.style.backgroundImage;
-                                img.style.backgroundImage = val;
-                            }
-                        }
-                    }
-                });
-            }
-        }
-    };
-
     /** When a key is pressed (while the grid, or one of its children, is selected). */
     onKeyPress = (event: React.KeyboardEvent): void => {
         if (event.key === "Enter") {
@@ -320,7 +283,7 @@ export class GameGrid extends React.Component<GameGridProps> {
         } else {
             const game =
                 this.props.games[
-                    params.scrollToRow * this.columns + params.scrollToColumn
+                params.scrollToRow * this.columns + params.scrollToColumn
                 ];
             if (game) {
                 this.props.onGameSelect(game);
@@ -404,7 +367,7 @@ function findGameIndex(
     gameId: string | undefined
 ): number {
     if (gameId !== undefined && games) {
-        for (let index in games) {
+        for (const index in games) {
             const game = games[index];
             if (game && game.id === gameId) {
                 return (index as any) | 0;

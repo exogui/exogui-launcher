@@ -1,3 +1,4 @@
+import { BackIn } from "@shared/back/types";
 import { getFileServerURL } from "@shared/Util";
 import * as React from "react";
 import { BareFloatingContainer } from "./FloatingContainer";
@@ -5,7 +6,6 @@ import {
     FormattedGameMedia,
     FormattedGameMediaType,
 } from "./GameImageCarousel";
-import { BackIn } from "@shared/back/types";
 
 export type MediaPreviewProps = {
     /** Media to display. */
@@ -25,18 +25,18 @@ export function MediaPreview(props: MediaPreviewProps) {
     };
 
     React.useEffect(() => {
-        if (props.media.category === '30 Second Demo') {
+        if (props.media.category === "30 Second Demo") {
             // Pause any running audio
-            window.External.back.send<boolean>(BackIn.TOGGLE_MUSIC, false);
+            window.External.back.send(BackIn.TOGGLE_MUSIC, false);
         }
 
         return () => {
             if (window.External.preferences.data.gameMusicPlay) {
                 // Resume any running audio
-                window.External.back.send<boolean>(BackIn.TOGGLE_MUSIC, true);
+                window.External.back.send(BackIn.TOGGLE_MUSIC, true);
             }
-        }
-    }, []);
+        };
+    }, [props.media.category]);
 
     const renderedMedia = () => {
         switch (props.media.type) {

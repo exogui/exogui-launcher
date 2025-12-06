@@ -109,7 +109,7 @@ export function GameListItem(props: GameListItemProps) {
 }
 
 export namespace GameListItem {
-    // eslint-disable-line no-redeclare
+
     /** ID of the attribute used to store the game's id. */
     export const idAttribute: string = "data-game-id";
 

@@ -22,9 +22,9 @@ export function parseVariableString(
     const arr = splitVariableString(str, options);
     return arr.length > 0
         ? arr.reduce(
-              (acc, val, index) =>
-                  acc + (index % 2 === 1 ? getValue(val) : val),
-          )
+            (acc, val, index) =>
+                acc + (index % 2 === 1 ? getValue(val) : val),
+        )
         : "";
 }
 

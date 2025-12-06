@@ -122,7 +122,7 @@ export function EditableTextElement<T>(props: EditableTextElementProps<T>) {
 }
 
 export namespace EditableTextElement {
-    // eslint-disable-line no-redeclare
+
     /** Default callback for the "onEditKeyDown" prop. */
     export const onEditKeyDown = ({
         event,

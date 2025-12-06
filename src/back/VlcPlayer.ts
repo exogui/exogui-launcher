@@ -1,9 +1,9 @@
-import { ChildProcess, spawn } from 'child_process';
-import * as net from 'net';
+import { ChildProcess, spawn } from "child_process";
+import * as net from "net";
 
 export class VlcPlayer {
     server: ChildProcess | null = null;
-    filepath: string = '';
+    filepath: string = "";
     private socket: net.Socket | null = null;
     private commandQueue: { command: string; resolve: (value: string) => void; reject: (reason?: any) => void }[] = [];
     private isProcessingQueue: boolean = false;
@@ -17,9 +17,9 @@ export class VlcPlayer {
         private initialVol: number,
     ) {
         this.server = spawn(this.vlcPath, [
-            ...this.args, '-I', 'rc', '--rc-host', `127.0.0.1:${port}`
+            ...this.args, "-I", "rc", "--rc-host", `127.0.0.1:${port}`
         ], { windowsHide: true });
-        this.server.on('error', (err) => {
+        this.server.on("error", (err) => {
             console.log(`Error starting VLC server: ${err}`);
             this.server = null;
         });
@@ -34,17 +34,17 @@ export class VlcPlayer {
         }
 
         return new Promise((resolve, reject) => {
-            this.socket = net.connect(this.port, '127.0.0.1', () => {
+            this.socket = net.connect(this.port, "127.0.0.1", () => {
                 this.isSocketConnected = true;
                 resolve();
             });
 
-            this.socket.on('error', (err) => {
+            this.socket.on("error", (err) => {
                 this.isSocketConnected = false;
                 reject(err);
             });
 
-            this.socket.on('close', () => {
+            this.socket.on("close", () => {
                 this.isSocketConnected = false;
             });
         });
@@ -79,33 +79,33 @@ export class VlcPlayer {
         const { command, resolve, reject } = this.commandQueue.shift()!;
 
         // Send the command through the socket
-        this.socket?.write(command + '\n');
+        this.socket?.write(command + "\n");
 
         // Listen for the response
         const onData = (data: Buffer) => {
             resolve(data.toString());
-            this.socket?.removeListener('data', onData); // Remove the listener to avoid memory leaks
+            this.socket?.removeListener("data", onData); // Remove the listener to avoid memory leaks
             this.processQueue(); // Process the next command
         };
 
-        this.socket?.on('data', onData);
+        this.socket?.on("data", onData);
 
         // Handle socket errors
-        this.socket?.on('error', (err) => {
+        this.socket?.on("error", (err) => {
             reject(err);
-            this.socket?.removeListener('data', onData);
+            this.socket?.removeListener("data", onData);
             this.processQueue(); // Process the next command even if there's an error
         });
     }
 
     private async _play() {
         if (this.filepath) {
-            await this.sendCommand('clear');
+            await this.sendCommand("clear");
             await this.sendCommand(`add "${this.filepath}"`);
             if (this.firstPlay) {
                 this.firstPlay = false;
                 setTimeout(() => {
-                    this.setVol(this.initialVol)
+                    this.setVol(this.initialVol);
                 }, 100);
             }
         } else {
@@ -135,7 +135,7 @@ export class VlcPlayer {
     }
 
     async stop(): Promise<void> {
-        await this.sendCommand('stop');
+        await this.sendCommand("stop");
         this.firstPlay = true;
     }
 

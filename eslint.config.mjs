@@ -10,19 +10,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ["dist/**", "website/**", "build/**", "extern/**", "extensions/**", "./**.mjs", "./**.js"]
-  },
-  {
-    files: ["src/**/*"],
-    rules: {
-      "no-restricted-imports": ["error", {
-        "patterns": [{
-          "group": ["flashpoint-launcher-renderer-ext/*"],
-          "allowTypeImports": true,
-          "message": "This module is only available in extensions, use Launcher src imports instead.",
-        }]
-      }]
-    }
+    ignores: ['dist/**', 'website/**',  'build/**', 'extern/**', 'extensions/**', './**.mjs', './**.js']
   },
   {
     files: ["**/*.{ts,tsx}"],
@@ -48,7 +36,7 @@ export default tseslint.config(
       "@typescript-eslint/adjacent-overload-signatures": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@stylistic/indent": ["error", 2, {
+      "indent": ["error", 4, {
         "MemberExpression": 0,
         "SwitchCase": 1
       }],
@@ -104,7 +92,6 @@ export default tseslint.config(
       "no-obj-calls": "warn",
       "no-octal": "warn",
       "no-prototype-builtins": "warn",
-      "no-redeclare": "warn",
       "no-regex-spaces": "warn",
       "no-self-assign": "warn",
       "no-shadow-restricted-names": "warn",
@@ -128,7 +115,8 @@ export default tseslint.config(
       "use-isnan": "warn",
       "valid-typeof": "warn",
       "wrap-iife": "warn",
-      "yoda": "warn"
+      "yoda": "warn",
+      "quotes": ["error", "double"]
     }
   },
   reactHooks.configs.flat["recommended-latest"],

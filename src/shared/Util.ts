@@ -127,7 +127,7 @@ export function stringifyArray(
     // Build string
     let str = "[ ";
     for (let i = 0; i < array.length; i++) {
-        let element = array[i];
+        const element = array[i];
         if (isString(element)) {
             str += `"${trimStrings ? trim(element) : element}"`;
         } else {
@@ -193,12 +193,12 @@ export function stringifyJsonDataFile(data: any): string {
  * @param second
  */
 export function shallowStrictEquals(first: any, second: any): boolean {
-    for (let key in first) {
+    for (const key in first) {
         if (!(key in second) || first[key] !== second[key]) {
             return false;
         }
     }
-    for (let key in second) {
+    for (const key in second) {
         if (!(key in first) || first[key] !== second[key]) {
             return false;
         }
@@ -218,7 +218,7 @@ export function recursiveReplace<T extends object>(target: T, source: any): T {
         return target;
     }
     // Go through all properties of target
-    for (let key in source) {
+    for (const key in source) {
         // Check if data has a property of the same name
         if (key in target) {
             const val = source[key];
@@ -243,7 +243,7 @@ export function recursiveReplace<T extends object>(target: T, source: any): T {
  */
 export function deepCopy<T>(source: T): T {
     const copy: any = Array.isArray(source) ? [] : {};
-    for (let key in source) {
+    for (const key in source) {
         let val = source[key];
         if (val !== null && typeof val === "object") {
             val = deepCopy(val);
@@ -399,7 +399,7 @@ export function versionNumberToText(version: number): string {
  */
 export function clearArray<T>(array: Array<T | undefined>): Array<T> {
     const clear: T[] = [];
-    for (let val of array) {
+    for (const val of array) {
         if (val !== undefined) {
             clear.push(val);
         }
@@ -503,10 +503,10 @@ export function escapeShell(cmd: string) {
 }
 
 export function removeLowestDirectory(filePath: string, popCount = 1): string {
-    let normalizedPath = path.normalize(filePath).replace(/\\/g, "/");
-    let pathSegments = normalizedPath.split('/');
+    const normalizedPath = path.normalize(filePath).replace(/\\/g, "/");
+    const pathSegments = normalizedPath.split("/");
     for (let i = 0; i < popCount; i++) pathSegments.pop();
-    let newPath = pathSegments.join('/');
+    const newPath = pathSegments.join("/");
 
     return newPath;
 }

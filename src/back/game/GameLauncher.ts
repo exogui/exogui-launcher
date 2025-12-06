@@ -1,4 +1,5 @@
-import { LogFunc, OpenDialogFunc, OpenExternalFunc } from "@back/types";
+import { OpenExternalFunc } from "@back/types";
+import { ShowMessageBoxFunc } from "@shared/back/types";
 import { IAdditionalApplicationInfo, IGameInfo } from "@shared/game/interfaces";
 import { ExecMapping } from "@shared/interfaces";
 import { Command, createCommand } from "@shared/mappings/CommandMapping";
@@ -28,12 +29,11 @@ type LaunchBaseOpts = {
     fpPath: string;
     execMappings: ExecMapping[];
     mappings: IAppCommandsMappingData;
-    log: LogFunc;
-    openDialog: OpenDialogFunc;
+    openDialog: ShowMessageBoxFunc;
     openExternal: OpenExternalFunc;
 };
 
-//@TODO we probably doesn't need seperate launch functions for add apps, setup, etc.
+// @TODO we probably doesn't need seperate launch functions for add apps, setup, etc.
 // Only one function to launch file with mapper for different file types
 export namespace GameLauncher {
     const logSource = "Game Launcher";
@@ -42,15 +42,11 @@ export namespace GameLauncher {
         appPath: string,
         appArgs: string,
         mappings: IAppCommandsMappingData,
-        log: LogFunc
     ): Promise<void> {
         const command = createCommand(appPath, appArgs, mappings);
         const proc = exec(command.command, { cwd: command.cwd });
-        logProcessOutput(proc, log);
-        log({
-            source: logSource,
-            content: `Launch command (PID: ${proc.pid}) [ path: "${appPath}", arg: "${appArgs}", command: ${command} ]`,
-        });
+        logProcessOutput(proc);
+        log(logSource, `Launch command (PID: ${proc.pid}) [ path: "${appPath}", arg: "${appArgs}", command: ${command} ]`);
         return new Promise((resolve, reject) => {
             if (proc.killed) {
                 resolve();
@@ -65,22 +61,21 @@ export namespace GameLauncher {
         });
     }
 
-    export function launchAdditionalApplication(
+    export async function launchAdditionalApplication(
         opts: LaunchAddAppOpts
     ): Promise<void> {
         // @FIXTHIS It is not possible to open dialog windows from the back process (all electron APIs are undefined).
         switch (opts.addApp.applicationPath) {
-            case ":message:":
-                return opts
-                    .openDialog({
-                        type: "info",
-                        title: "About This Game",
-                        message: opts.addApp.launchCommand,
-                        buttons: ["Ok"],
-                    })
-                    .then();
-
-            case ":extras:":
+            case ":message:": {
+                opts.openDialog({
+                    type: "info",
+                    title: "About This Game",
+                    message: opts.addApp.launchCommand,
+                    buttons: ["Ok"],
+                });
+                break;
+            }
+            case ":extras:": {
                 const folderPath = fixSlashes(
                     path.join(
                         opts.fpPath,
@@ -88,21 +83,21 @@ export namespace GameLauncher {
                     )
                 );
                 return opts
-                    .openExternal(folderPath, { activate: true })
-                    .catch((error) => {
-                        if (error) {
-                            opts.openDialog({
-                                type: "error",
-                                title: "Failed to Open Extras",
-                                message:
+                .openExternal(folderPath, { activate: true })
+                .catch((error) => {
+                    if (error) {
+                        opts.openDialog({
+                            type: "error",
+                            title: "Failed to Open Extras",
+                            message:
                                     `${error.toString()}\n` +
                                     `Path: ${folderPath}`,
-                                buttons: ["Ok"],
-                            });
-                        }
-                    });
-
-            default:
+                            buttons: ["Ok"],
+                        });
+                    }
+                });
+            }
+            default: {
                 const appPath: string = fixSlashes(
                     path.join(
                         opts.fpPath,
@@ -114,7 +109,8 @@ export namespace GameLauncher {
                     )
                 );
                 const appArgs: string = opts.addApp.launchCommand;
-                return launchCommand(appPath, appArgs, opts.mappings, opts.log);
+                return launchCommand(appPath, appArgs, opts.mappings);
+            }
         }
     }
 
@@ -134,11 +130,10 @@ export namespace GameLauncher {
                 native: opts.native,
                 execMappings: opts.execMappings,
                 mappings: opts.mappings,
-                log: opts.log,
                 openDialog: opts.openDialog,
                 openExternal: opts.openExternal,
             };
-            for (let addApp of opts.addApps) {
+            for (const addApp of opts.addApps) {
                 if (addApp.autoRunBefore) {
                     const promise = launchAdditionalApplication({
                         ...addAppOpts,
@@ -151,7 +146,6 @@ export namespace GameLauncher {
             }
         }
         // Launch game
-        let proc: ChildProcess;
         const gamePath: string = fixSlashes(
             path.join(
                 opts.fpPath,
@@ -168,23 +162,16 @@ export namespace GameLauncher {
         try {
             command = createCommand(gamePath, gameArgs, opts.mappings);
         } catch (e) {
-            opts.log({
-                source: logSource,
-                content: `Launch Game "${opts.game.title}" failed. Error: ${e}`,
-            });
+            log(logSource, `Launch Game "${opts.game.title}" failed. Error: ${e}`);
             return;
         }
 
-        proc = exec(command.command, { cwd: command.cwd });
-        logProcessOutput(proc, opts.log);
-        opts.log({
-            source: logSource,
-            content:
-                `Launch Game "${opts.game.title}" (PID: ${proc.pid}) [\n` +
-                `    applicationPath: "${opts.game.applicationPath}",\n` +
-                `    launchCommand:   "${opts.game.launchCommand}",\n` +
-                `    command:         "${command}" ]`,
-        });
+        const proc = exec(command.command, { cwd: command.cwd });
+        logProcessOutput(proc);
+        log(logSource, `Launch Game "${opts.game.title}" (PID: ${proc.pid}) [\n` +
+            `    applicationPath: "${opts.game.applicationPath}",\n` +
+            `    launchCommand:   "${opts.game.launchCommand}",\n` +
+            `    command:         "${command}" ]`);
     }
 
     /**
@@ -193,7 +180,6 @@ export namespace GameLauncher {
      */
     export async function launchGameSetup(opts: LaunchGameOpts): Promise<void> {
         // Launch game
-        let proc: ChildProcess;
         const setupPath = opts.game.applicationPath.replace(
             getFilename(opts.game.applicationPath),
             "install.command"
@@ -212,16 +198,12 @@ export namespace GameLauncher {
             opts.mappings
         );
 
-        proc = exec(command.command, { cwd: command.cwd });
-        logProcessOutput(proc, opts.log);
-        opts.log({
-            source: logSource,
-            content:
-                `Launch Game Setup "${opts.game.title}" (PID: ${proc.pid}) [\n` +
-                `    applicationPath: "${opts.game.applicationPath}",\n` +
-                `    launchCommand:   "${opts.game.launchCommand}",\n` +
-                `    command:         "${command}" ]`,
-        });
+        const proc = exec(command.command, { cwd: command.cwd });
+        logProcessOutput(proc);
+        log(logSource, `Launch Game Setup "${opts.game.title}" (PID: ${proc.pid}) [\n` +
+            `    applicationPath: "${opts.game.applicationPath}",\n` +
+            `    launchCommand:   "${opts.game.launchCommand}",\n` +
+            `    command:         "${command}" ]`);
     }
 
     /**
@@ -261,17 +243,14 @@ export namespace GameLauncher {
         return filePath;
     }
 
-    function logProcessOutput(proc: ChildProcess, log: LogFunc): void {
+    function logProcessOutput(proc: ChildProcess): void {
         // Log for debugging purposes
         // (might be a bad idea to fill the console with junk?)
         const logStuff = (event: string, args: any[]): void => {
-            log({
-                source: logSource,
-                content: `${event} (PID: ${padStart(
-                    proc.pid ?? -1,
-                    5
-                )}) ${stringifyArray(args, stringifyArrayOpts)}`,
-            });
+            log(logSource, `${event} (PID: ${padStart(
+                proc.pid ?? -1,
+                5
+            )}) ${stringifyArray(args, stringifyArrayOpts)}`);
         };
         doStuffs(
             proc,
@@ -307,122 +286,3 @@ function doStuffs(
         });
     }
 }
-
-/**
- * Escape a string that will be used in a Windows shell (command line)
- * ( According to this: http://www.robvanderwoude.com/escapechars.php )
- */
-function escapeWin(str: string): string {
-    return splitQuotes(str).reduce(
-        (acc, val, i) =>
-            acc + (i % 2 === 0 ? val.replace(/[\^&<>|]/g, "^$&") : `"${val}"`),
-        ""
-    );
-}
-
-/**
- * Split a string to separate the characters wrapped in quotes from all other.
- * Example: '-a -b="123" "example.com"' => ['-a -b=', '123', ' ', 'example.com']
- * @param str String to split.
- * @returns Split of the argument string.
- *          Items with odd indices are wrapped in quotes.
- *          Items with even indices are NOT wrapped in quotes.
- */
-function splitQuotes(str: string): string[] {
-    // Search for all pairs of quotes and split the string accordingly
-    const splits: string[] = [];
-    let start = 0;
-    while (true) {
-        const begin = str.indexOf('"', start);
-        if (begin >= 0) {
-            const end = str.indexOf('"', begin + 1);
-            if (end >= 0) {
-                splits.push(str.substring(start, begin));
-                splits.push(str.substring(begin + 1, end));
-                start = end + 1;
-            } else {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
-    // Push remaining characters
-    if (start < str.length) {
-        splits.push(str.substring(start, str.length));
-    }
-    return splits;
-}
-
-type UnityOutputResponse = {
-    text: string;
-    fn: (proc: ChildProcess, openDialog: OpenDialogFunc) => void;
-};
-
-const unityOutputResponses: UnityOutputResponse[] = [
-    {
-        text: "Failed to set registry keys!\r\n" + "Retry? (Y/n): ",
-        fn(proc, openDialog) {
-            openDialog({
-                type: "warning",
-                title: "Start Unity - Registry Key Warning",
-                message: "Failed to set registry keys!\n" + "Retry?",
-                buttons: ["Yes", "No"],
-                defaultId: 0,
-                cancelId: 1,
-            }).then((response) => {
-                if (!proc.stdin) {
-                    throw new Error(
-                        'Failed to signal to Unity starter. Can not access its "standard in".'
-                    );
-                }
-                if (response === 0) {
-                    proc.stdin.write("Y");
-                } else {
-                    proc.stdin.write("n");
-                }
-            });
-        },
-    },
-    {
-        text:
-            "Invalid parameters!\r\n" +
-            "Correct usage: startUnity [2.x|5.x] URL\r\n" +
-            "If you need to undo registry changes made by this script, run unityRestoreRegistry.bat. \r\n" +
-            "Press any key to continue . . . ",
-        fn(proc, openDialog) {
-            openDialog({
-                type: "warning",
-                title: "Start Unity - Invalid Parameters",
-                message:
-                    "Invalid parameters!\n" +
-                    "Correct usage: startUnity [2.x|5.x] URL\n" +
-                    "If you need to undo registry changes made by this script, run unityRestoreRegistry.bat.",
-                buttons: ["Ok"],
-                defaultId: 0,
-                cancelId: 0,
-            });
-        },
-    },
-    {
-        text:
-            "You must close the Basilisk browser to continue.\r\n" +
-            "If you have already closed Basilisk, please wait a moment...\r\n",
-        fn(proc, openDialog) {
-            openDialog({
-                type: "info",
-                title: "Start Unity - Browser Already Open",
-                message:
-                    "You must close the Basilisk browser to continue.\n" +
-                    "If you have already closed Basilisk, please wait a moment...",
-                buttons: ["Ok", "Cancel"],
-                defaultId: 0,
-                cancelId: 1,
-            }).then((response) => {
-                if (response === 1) {
-                    proc.kill();
-                }
-            });
-        },
-    },
-];

@@ -1,6 +1,6 @@
 import { fixSlashes, getFileServerURL } from "@shared/Util";
 import { GameMedia } from "@shared/game/interfaces";
-import * as React from 'react';
+import * as React from "react";
 import { useEffect, useState } from "react";
 import { OpenIcon } from "./OpenIcon";
 
@@ -49,65 +49,65 @@ export function GameImageCarousel(props: GameImageCarouselProps) {
     };
 
     const imagePreviews = sortedMedia
-        .slice(
-            Math.min(wheelPosition, sortedMedia.length - 1),
-            Math.min(wheelPosition + IMAGE_COUNT, sortedMedia.length)
-        )
-        .map((media, idx) => {
-            const selected = wheelPosition + idx === selectedMediaIdx;
+    .slice(
+        Math.min(wheelPosition, sortedMedia.length - 1),
+        Math.min(wheelPosition + IMAGE_COUNT, sortedMedia.length)
+    )
+    .map((media, idx) => {
+        const selected = wheelPosition + idx === selectedMediaIdx;
 
-            let innerElem = undefined;
-            switch (media.type) {
-                case FormattedGameMediaType.IMAGE:
-                    innerElem = (
-                        <img
+        let innerElem = undefined;
+        switch (media.type) {
+            case FormattedGameMediaType.IMAGE:
+                innerElem = (
+                    <img
+                        key={props.imgKey}
+                        className="fill-image"
+                        src={`${getFileServerURL()}/${media.path}`}
+                    />
+                );
+                break;
+            case FormattedGameMediaType.VIDEO:
+                innerElem = (
+                    <>
+                        <div className="game-image-carousel-wheel-preview-overlay">
+                            <OpenIcon
+                                className="game-image-carousel-wheel-preview-overlay--icon"
+                                icon="play-circle"
+                            />
+                        </div>
+                        <video
                             key={props.imgKey}
                             className="fill-image"
-                            src={`${getFileServerURL()}/${media.path}`}
-                        />
-                    );
-                    break;
-                case FormattedGameMediaType.VIDEO:
-                    innerElem = (
-                        <>
-                            <div className="game-image-carousel-wheel-preview-overlay">
-                                <OpenIcon
-                                    className="game-image-carousel-wheel-preview-overlay--icon"
-                                    icon="play-circle"
-                                />
-                            </div>
-                            <video
-                                key={props.imgKey}
-                                className="fill-image"
-                                muted
-                                src={`${getFileServerURL()}/${media.path
-                                    }#t=0.1`}
-                            ></video>
-                        </>
-                    );
-                    break;
-            }
+                            muted
+                            src={`${getFileServerURL()}/${media.path
+                            }#t=0.1`}
+                        ></video>
+                    </>
+                );
+                break;
+        }
 
-            return (
-                <div
-                    key={`${props.imgKey}-${idx}`}
-                    style={{
-                        width: `${(1 / IMAGE_COUNT) * (100 - IMAGE_COUNT * 2)
-                            }%`,
-                        marginLeft: "1%",
-                        marginRight: "1%",
-                    }}
-                    className={`game-image-carousel-wheel-preview ${selected &&
+        return (
+            <div
+                key={`${props.imgKey}-${idx}`}
+                style={{
+                    width: `${(1 / IMAGE_COUNT) * (100 - IMAGE_COUNT * 2)
+                    }%`,
+                    marginLeft: "1%",
+                    marginRight: "1%",
+                }}
+                className={`game-image-carousel-wheel-preview ${selected &&
                         "game-image-carousel-wheel-preview--selected"
-                        }`}
-                    onMouseEnter={() => handleMouseEnter(idx)}
-                    onMouseLeave={handleMouseLeave}
-                    onClick={() => setSelectedMediaIdx(idx + wheelPosition)}
-                >
-                    {innerElem}
-                </div>
-            );
-        });
+                }`}
+                onMouseEnter={() => handleMouseEnter(idx)}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => setSelectedMediaIdx(idx + wheelPosition)}
+            >
+                {innerElem}
+            </div>
+        );
+    });
 
     if (
         sortedMedia.length === 0 ||
@@ -177,7 +177,7 @@ export function GameImageCarousel(props: GameImageCarouselProps) {
                         {hoveredIndex === null
                             ? selectedMedia.category
                             : sortedMedia[wheelPosition + hoveredIndex]
-                                .category}
+                            .category}
                     </div>
                 </>
             )}

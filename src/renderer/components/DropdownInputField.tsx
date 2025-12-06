@@ -123,9 +123,9 @@ export class DropdownInputField extends React.Component<
                 </label>
             ));
         },
-        ([itemsA], [itemsB]) => {
-            return checkIfArraysAreEqual(itemsA, itemsB);
-        },
+    ([itemsA], [itemsB]) => {
+        return checkIfArraysAreEqual(itemsA, itemsB);
+    },
     );
 
     onGlobalMouseDown = (event: MouseEvent) => {

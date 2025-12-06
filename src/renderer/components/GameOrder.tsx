@@ -61,7 +61,7 @@ export class GameOrder extends React.Component<GameOrderProps> {
             const orderBy = validateOrderBy(event.target.value);
             this.props.onChangeOrderBy(orderBy);
         } catch (error) {
-            console.log('Failed to update order by: ' + error);
+            console.log("Failed to update order by: " + error);
         }
     };
 
@@ -72,7 +72,7 @@ export class GameOrder extends React.Component<GameOrderProps> {
             const orderReverse = validateOrderReverse(event.target.value);
             this.props.onChangeOrderReverse(orderReverse);
         } catch (error) {
-            console.log('Failed to update order reverse: ' + error);
+            console.log("Failed to update order reverse: " + error);
         }
     };
 }

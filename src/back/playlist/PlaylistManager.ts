@@ -30,13 +30,13 @@ export class PlaylistManager {
                     withFileTypes: true,
                 })
             )
-                .filter(
-                    (dirent) =>
-                        dirent.isFile() &&
+            .filter(
+                (dirent) =>
+                    dirent.isFile() &&
                         !dirent.name.toLowerCase().startsWith("installed") &&
                         dirent.name.endsWith(".xml")
-                )
-                .map((dirent) => dirent.name);
+            )
+            .map((dirent) => dirent.name);
             console.log(`Found ${playlistFiles.length} playlists`);
             playlistFiles.forEach((pf) =>
                 this._onPlaylistAddOrChange(pf, opts)
@@ -78,12 +78,12 @@ export class PlaylistManager {
         }
         // Add or update playlist
         if (playlist) {
-            console.log(`Playlist is valid`);
+            console.log("Playlist is valid");
             const index = this.playlists.findIndex(
                 (p) => p.filename === filename
             );
             if (index >= 0) {
-                console.log(`Playlist exists, updating.`);
+                console.log("Playlist exists, updating.");
                 this.playlists[index] = playlist;
             } else {
                 console.log(`Adding new playlist: ${playlist.filename}`);

@@ -33,7 +33,7 @@ export const isDev: boolean = (function () {
         ? getFromEnv
         : process.defaultApp ||
               /node_modules[\\/]electron[\\/]/.test(process.execPath);
-})();
+}());
 
 /**
  * Get the path of the folder containing the config and preferences files.
@@ -42,8 +42,8 @@ export const isDev: boolean = (function () {
 export function getMainFolderPath(): string {
     // For packaged apps (AppImage on Linux, .app on macOS), use userData directory
     // For portable/dev mode, use current working directory
-    if (process.env.APPIMAGE || (process.platform === 'darwin' && !isDev)) {
-        return app.getPath('userData');
+    if (process.env.APPIMAGE || (process.platform === "darwin" && !isDev)) {
+        return app.getPath("userData");
     }
     return process.cwd();
 }

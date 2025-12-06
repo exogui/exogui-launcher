@@ -1,23 +1,32 @@
-import * as electron from "electron";
-import { OpenDialogOptions } from "electron";
-import * as path from "path";
-import { SharedSocket } from "@shared/back/SharedSocket";
+import { app, BrowserWindow, dialog, shell } from "@electron/remote";
+import { SocketClient } from "@shared/back/SocketClient";
 import {
     BackIn,
-    BackOut,
-    GetRendererInitDataResponse,
-    OpenDialogData,
-    OpenDialogResponseData,
-    OpenExternalData,
-    OpenExternalResponseData,
-    WrappedResponse,
+    BackOut
 } from "@shared/back/types";
+import { IMainWindowExternal } from "@shared/interfaces";
 import { InitRendererChannel, InitRendererData } from "@shared/IPC";
 import { setTheme } from "@shared/Theme";
 import { createErrorProxy } from "@shared/Util";
+import * as electron from "electron";
+import { OpenDialogOptions } from "electron";
+import * as path from "path";
 import { isDev } from "./Util";
-import { app, BrowserWindow, dialog, shell } from "@electron/remote";
-import { IMainWindowExternal } from "@shared/interfaces";
+
+console.log("preloading");
+
+async function waitForConnection(host: string): Promise<WebSocket> {
+    while (true) {
+        try {
+            const socket = await SocketClient.connect(WebSocket, host, "exogui-launcher");
+            console.log("Initial connection established to backend");
+            return socket;
+        } catch (error) {
+            console.log("Initial connection failed to backend, waiting 5 seconds...");
+            await new Promise<void>(resolve => setTimeout(resolve, 5000));
+        }
+    }
+}
 
 /**
  * Object with functions that bridge between this and the Main processes
@@ -80,7 +89,7 @@ import { IMainWindowExternal } from "@shared/interfaces";
 
     isBackRemote: createErrorProxy("isBackRemote"),
 
-    back: new SharedSocket(WebSocket),
+    back: new SocketClient(WebSocket),
 
     fileServerPort: -1,
 
@@ -90,131 +99,76 @@ import { IMainWindowExternal } from "@shared/interfaces";
     initialPlaylists: createErrorProxy("initialPlaylists"),
     initialLocaleCode: createErrorProxy("initialLocaleCode"),
 
-    waitUntilInitialized() {
+    waitUntilInitialized: async () => {
         if (!isInitDone) {
-            return onInit;
+            return onInit();
         }
     },
 };
 
 let isInitDone: boolean = false;
 const onInit = (async () => {
-    // Fetch data from main process
+    // Fetch connection setup data from main process
     const data: InitRendererData =
         electron.ipcRenderer.sendSync(InitRendererChannel);
-    // Store value(s)
     window.External.installed = data.installed;
     window.External.version = data.version;
     window.External.isBackRemote = data.isBackRemote;
     window.External.backUrl = new URL(data.host);
-    // Connect to the back
-    const socket = await SharedSocket.connect(
-        WebSocket,
-        data.host,
-        data.secret
-    );
+    // Connect to the backend
+    const socket = await waitForConnection(data.host);
     window.External.back.url = data.host;
-    window.External.back.secret = data.secret;
+    window.External.back.secret = "exogui-launcher";
     window.External.back.setSocket(socket);
-})()
-    .then(
-        () =>
-            new Promise((resolve, reject) => {
-                window.External.back.on("message", onMessage);
-                // Fetch the config and preferences
-                window.External.back.send<GetRendererInitDataResponse>(
-                    BackIn.GET_RENDERER_INIT_DATA,
-                    undefined,
-                    (response) => {
-                        if (response.data) {
-                            window.External.preferences.data =
-                                response.data.preferences;
-                            window.External.config = {
-                                data: response.data.config,
-                                // @FIXTHIS This should take if this is installed into account
-                                fullExodosPath: path.join(
-                                    response.data.config.exodosPath
-                                ),
-                                fullJsonFolderPath: path.join(
-                                    response.data.config.exodosPath,
-                                    response.data.config.jsonFolderPath
-                                ),
-                            };
-                            window.External.commandMappings =
-                                response.data.commandMappings;
-                            window.External.fileServerPort =
-                                response.data.fileServerPort;
-                            window.External.log.entries = response.data.log;
-                            window.External.initialThemes =
-                                response.data.themes;
-                            window.External.initialPlaylists =
-                                response.data.playlists;
-                            window.External.initialLocaleCode =
-                                response.data.localeCode;
-                            if (window.External.preferences.data.currentTheme) {
-                                setTheme(
-                                    window.External.preferences.data
-                                        .currentTheme
-                                );
-                            }
-                            resolve(null);
-                        } else {
-                            reject(
-                                new Error(
-                                    '"Get Renderer Init Data" response does not contain any data.'
-                                )
-                            );
-                        }
-                    }
-                );
-            })
-    )
-    .then(() => {
-        isInitDone = true;
+
+    registerHandlers();
+
+    // Load initial renderer data from backend
+    const { config, preferences, commandMappings, fileServerPort,
+        log, themes, playlists, localeCode
+    } = await window.External.back.request(BackIn.GET_RENDERER_INIT_DATA);
+    window.External.preferences.data = preferences;
+    window.External.config = {
+        data: config,
+        fullExodosPath: path.resolve(config.exodosPath),
+        fullJsonFolderPath: path.resolve(config.exodosPath, config.jsonFolderPath)
+    };
+    window.External.commandMappings = commandMappings;
+    window.External.fileServerPort = fileServerPort;
+    window.External.log.entries = log;
+    window.External.initialThemes = themes;
+    window.External.initialPlaylists = playlists;
+    window.External.initialLocaleCode = localeCode;
+    if (window.External.preferences.data.currentTheme) {
+        setTheme(window.External.preferences.data.currentTheme);
+    }
+
+    // Start keepalive routine
+    setInterval(async () => {
+        try {
+            await window.External.back.request(BackIn.KEEP_ALIVE);
+        } catch {
+            /** Ignore any bad response */
+        }
+    }, 30000);
+
+    isInitDone = true;
+});
+
+function registerHandlers() {
+    window.External.back.register(BackOut.UPDATE_PREFERENCES_RESPONSE, (event, data) => {
+        window.External.preferences.data = data;
     });
 
-function onMessage(this: WebSocket, res: WrappedResponse): void {
-    switch (res.type) {
-        case BackOut.UPDATE_PREFERENCES_RESPONSE:
-            {
-                window.External.preferences.data = res.data;
-            }
-            break;
+    window.External.back.register(BackOut.OPEN_DIALOG, async (event, options) => {
+        const res = await dialog.showMessageBox(options)
+        .then((res) => {
+            return res.response;
+        });
+        return res;
+    });
 
-        case BackOut.OPEN_DIALOG:
-            {
-                const resData: OpenDialogData = res.data;
-                dialog.showMessageBox(resData).then((r) => {
-                    window.External.back.sendReq<any, OpenDialogResponseData>({
-                        id: res.id,
-                        type: BackIn.GENERIC_RESPONSE,
-                        data: r.response,
-                    });
-                });
-            }
-            break;
-
-        case BackOut.OPEN_EXTERNAL:
-            {
-                const resData: OpenExternalData = res.data;
-
-                shell
-                    .openExternal(resData.url, resData.options)
-                    .then(() => {
-                        window.External.back.sendReq<OpenExternalResponseData>({
-                            id: res.id,
-                            type: BackIn.GENERIC_RESPONSE,
-                            data: {},
-                        });
-                    })
-                    .catch((error) => {
-                        window.External.back.sendReq<OpenExternalResponseData>({
-                            id: res.id,
-                            type: BackIn.GENERIC_RESPONSE,
-                            data: { error },
-                        });
-                    });
-            }
-            break;
-    }
+    window.External.back.register(BackOut.OPEN_EXTERNAL, async (event, url, options) => {
+        return shell.openExternal(url, options);
+    });
 }

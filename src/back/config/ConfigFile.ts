@@ -17,8 +17,8 @@ export namespace ConfigFile {
     ): Promise<IAppConfigData> {
         return new Promise((resolve, reject) => {
             readJsonFile(filePath, "utf8")
-                .then((json) => resolve(parse(json, onError)))
-                .catch(reject);
+            .then((json) => resolve(parse(json, onError)))
+            .catch(reject);
         });
     }
 

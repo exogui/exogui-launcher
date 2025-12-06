@@ -20,8 +20,8 @@ export namespace CreditsFile {
                     onError(`Error while parsing Credits: ${e.toString()}`)),
         });
         parser
-            .prop("profiles")
-            .array((item) => parsed.profiles.push(parseProfile(item)));
+        .prop("profiles")
+        .array((item) => parsed.profiles.push(parseProfile(item)));
         return parsed;
     }
 
@@ -36,8 +36,8 @@ export namespace CreditsFile {
         parser.prop("icon", (v) => (parsed.icon = str(v)), true);
         parser.prop("note", (v) => (parsed.note = str(v)), true);
         parser
-            .prop("roles", true)
-            .arrayRaw((role) => parsed.roles.push(str(role)));
+        .prop("roles", true)
+        .arrayRaw((role) => parsed.roles.push(str(role)));
         return parsed;
     }
 }

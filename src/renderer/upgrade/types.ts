@@ -1,4 +1,4 @@
-import { UpgradeStageState } from '../interfaces';
+import { UpgradeStageState } from "../interfaces";
 
 export type UpgradeStage = {
   id: string;

@@ -1,4 +1,4 @@
-import { AnyFunction, ArgumentTypesOf } from '../interfaces';
+import { AnyFunction, ArgumentTypesOf } from "../interfaces";
 
 /** A callable object that has the same argument types as T (and void as the return type). */
 interface CallableCopy<T extends AnyFunction> extends Function {
@@ -16,19 +16,19 @@ interface CallableCopyAsync<T extends AnyFunction> extends Function {
  * @param time Time in milliseconds before calling
  */
 export function throttle<T extends AnyFunction>(callback: T, time:number): CallableCopy<T> {
-  // Store timeout
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  // Function that receives and records the events
-  const throttler: CallableCopy<T> = function(...args) {
+    // Store timeout
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    // Function that receives and records the events
+    const throttler: CallableCopy<T> = function(...args) {
     // Check if currently throttling
-    if (timeout != undefined) { return; }
-    // Release event after some time
-    timeout = setTimeout(function() {
-      timeout = undefined;
-    }, time);
-    callback(...args);
-  };
-  return throttler;
+        if (timeout != undefined) { return; }
+        // Release event after some time
+        timeout = setTimeout(function() {
+            timeout = undefined;
+        }, time);
+        callback(...args);
+    };
+    return throttler;
 }
 
 /**
@@ -38,19 +38,19 @@ export function throttle<T extends AnyFunction>(callback: T, time:number): Calla
  * @param time Time in milliseconds before calling
  */
 export function delayedThrottle<T extends AnyFunction>(callback: T, time:number): CallableCopy<T> {
-  // Store timeout
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  // Function that receives and records the events
-  const throttler: CallableCopy<T> = function(...args) {
+    // Store timeout
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    // Function that receives and records the events
+    const throttler: CallableCopy<T> = function(...args) {
     // Check if currently throttling
-    if (timeout != undefined) { return; }
-    // Release event after some time
-    timeout = setTimeout(function() {
-      timeout = undefined;
-      callback(...args);
-    }, time);
-  };
-  return throttler;
+        if (timeout != undefined) { return; }
+        // Release event after some time
+        timeout = setTimeout(function() {
+            timeout = undefined;
+            callback(...args);
+        }, time);
+    };
+    return throttler;
 }
 
 /**
@@ -60,23 +60,23 @@ export function delayedThrottle<T extends AnyFunction>(callback: T, time:number)
  * @param time Time in milliseconds before calling
  */
 export function delayedThrottleAsync<T extends AnyFunction>(callback: T, time:number): CallableCopyAsync<T> {
-  // Store timeout
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  // Function that receives and records the events
-  const throttler: CallableCopyAsync<T> = async function(...args) {
-    return new Promise(resolve => {
-      // Check if currently throttling
-      if (timeout != undefined) {
-        resolve();
-        return;
-      }
-      // Release event after some time
-      timeout = setTimeout(async function() {
-        timeout = undefined;
-        await callback(...args);
-        resolve();
-      }, time);
-    });
-  };
-  return throttler;
+    // Store timeout
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    // Function that receives and records the events
+    const throttler: CallableCopyAsync<T> = async function(...args) {
+        return new Promise(resolve => {
+            // Check if currently throttling
+            if (timeout != undefined) {
+                resolve();
+                return;
+            }
+            // Release event after some time
+            timeout = setTimeout(async function() {
+                timeout = undefined;
+                await callback(...args);
+                resolve();
+            }, time);
+        });
+    };
+    return throttler;
 }

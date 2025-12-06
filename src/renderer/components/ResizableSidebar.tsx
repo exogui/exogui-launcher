@@ -95,7 +95,7 @@ export class ResizableSidebar extends React.Component<
     onDividerMouseDown = (event: React.MouseEvent): void => {
         if (event.button === 0 && !this.state.isDragging) {
             if (!document.defaultView) {
-                throw new Error('"document.defaultView" missing.');
+                throw new Error("\"document.defaultView\" missing.");
             }
             if (!this.sidebarRef.current) {
                 throw new Error("sidebar div is missing.");

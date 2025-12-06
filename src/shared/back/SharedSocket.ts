@@ -177,13 +177,13 @@ export class SharedSocket<T extends Socket> extends EventEmitter {
             console.log("Reconnecting to " + this.url);
             // Connect
             SharedSocket.connect(this.socketCon, this.url, this.secret)
-                .then((socket) => {
-                    this.setSocket(socket);
-                })
-                .catch((error) => {
-                    console.error(error);
-                    setTimeout(() => this.reconnect(), 50);
-                });
+            .then((socket) => {
+                this.setSocket(socket);
+            })
+            .catch((error) => {
+                console.error(error);
+                setTimeout(() => this.reconnect(), 50);
+            });
         }
     }
 

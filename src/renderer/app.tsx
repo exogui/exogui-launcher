@@ -4,18 +4,9 @@ import { setTheme } from "@shared/Theme";
 import { Theme } from "@shared/ThemeFile";
 import { getFileServerURL } from "@shared/Util";
 import {
-    AddLogData,
     BackIn,
     BackInit,
-    BackOut,
-    GetPlaylistResponse,
-    InitEventData,
-    LaunchGameData,
-    LocaleUpdateData,
-    LogEntryAddedData,
-    PlaylistRemoveData,
-    ThemeChangeData,
-    ThemeListChangeData,
+    BackOut
 } from "@shared/back/types";
 import { APP_TITLE } from "@shared/constants";
 import { ExodosBackendInfo, GamePlaylist, WindowIPC } from "@shared/interfaces";
@@ -59,10 +50,7 @@ const mapDispatch = {
 
 const connector = connect(mapState, mapDispatch);
 
-type OwnProps = {};
-
 export type AppProps = ConnectedProps<typeof connector> &
-    OwnProps &
     WithRouterProps &
     WithPreferencesProps;
 
@@ -159,26 +147,26 @@ class App extends React.Component<AppProps, AppState> {
         (() => {
             let askBeforeClosing = true;
             window.onbeforeunload = (event: BeforeUnloadEvent) => {
-                let stillDownloading = false;
+                const stillDownloading = false;
                 if (askBeforeClosing && stillDownloading) {
                     event.returnValue = 1; // (Prevent closing the window)
                     dialog
-                        .showMessageBox({
-                            type: "warning",
-                            title: "Exit Launcher?",
-                            message:
+                    .showMessageBox({
+                        type: "warning",
+                        title: "Exit Launcher?",
+                        message:
                                 "All progress on downloading or installing the upgrade will be lost.\n" +
                                 "Are you sure you want to exit?",
-                            buttons: ["Yes", "No"],
-                            defaultId: 1,
-                            cancelId: 1,
-                        })
-                        .then(({ response }) => {
-                            if (response === 0) {
-                                askBeforeClosing = false;
-                                this.unmountBeforeClose();
-                            }
-                        });
+                        buttons: ["Yes", "No"],
+                        defaultId: 1,
+                        cancelId: 1,
+                    })
+                    .then(({ response }) => {
+                        if (response === 0) {
+                            askBeforeClosing = false;
+                            this.unmountBeforeClose();
+                        }
+                    });
                 } else {
                     this.unmountBeforeClose();
                 }
@@ -222,129 +210,85 @@ class App extends React.Component<AppProps, AppState> {
 
         this.props.initializeGames();
 
-        window.External.back.send<InitEventData>(
-            BackIn.INIT_LISTEN,
-            undefined,
-            (res) => {
-                if (!res.data) {
-                    throw new Error("INIT_LISTEN response is missing data.");
-                }
-                const nextLoaded = { ...this.state.loaded };
-                for (let key of res.data.done) {
-                    nextLoaded[key] = true;
-                }
-                this.setState({ loaded: nextLoaded });
-            }
-        );
+        window.External.back.register(BackOut.INIT_EVENT, async (event, data) => {
+            const loaded = { ...this.state.loaded };
+            for (const index of data) {
+                loaded[index] = true;
 
-        window.External.back.on("message", (res) => {
-            console.log(`Message from backend: ${BackOut[res.type]}`);
-            switch (res.type) {
-                case BackOut.INIT_EVENT:
-                    {
-                        const resData: InitEventData = res.data;
-
-                        const loaded = { ...this.state.loaded };
-                        for (let index of resData.done) {
-                            loaded[index] = true;
-
-                            switch (
-                                parseInt(index + "", 10) // (It is a string, even though TS thinks it is a number)
-                            ) {
-                                case BackInit.PLAYLISTS:
-                                    window.External.back.send<GetPlaylistResponse>(
-                                        BackIn.GET_PLAYLISTS,
-                                        undefined,
-                                        (res) => {
-                                            if (res.data) {
-                                                this.setState({
-                                                    playlists: res.data,
-                                                });
-                                                this.cachePlaylistIcons(
-                                                    res.data
-                                                );
-                                            }
-                                        }
-                                    );
-                                    break;
-                            }
-                        }
-
-                        this.setState({ loaded });
-                    }
-                    break;
-
-                case BackOut.LOG_ENTRY_ADDED:
-                    {
-                        const resData: LogEntryAddedData = res.data;
-                        window.External.log.entries[
-                            resData.index - window.External.log.offset
-                        ] = resData.entry;
-                    }
-                    break;
-
-                case BackOut.LOCALE_UPDATE:
-                    {
-                        const resData: LocaleUpdateData = res.data;
-                        this.setState({ localeCode: resData });
-                    }
-                    break;
-
-                case BackOut.PLAYLIST_REMOVE:
-                    {
-                        const resData: PlaylistRemoveData = res.data;
-
-                        const index = this.state.playlists.findIndex(
-                            (p) => p.filename === resData
-                        );
-                        if (index >= 0) {
-                            const playlists = [...this.state.playlists];
-                            playlists.splice(index, 1);
-
-                            const cache: Record<string, string> = {
-                                ...this.state.playlistIconCache,
-                            };
-                            const filename =
-                                this.state.playlists[index].filename;
-                            if (filename in cache) {
-                                delete cache[filename];
-                            }
-
-                            this.setState({
-                                playlists: playlists,
-                                playlistIconCache: cache,
-                            });
-                        }
-                    }
-                    break;
-
-                case BackOut.THEME_CHANGE:
-                    {
-                        const resData: ThemeChangeData = res.data;
-                        if (
-                            resData === this.props.preferencesData.currentTheme
-                        ) {
-                            setTheme(resData);
-                        }
-                    }
-                    break;
-
-                case BackOut.THEME_LIST_CHANGE:
-                    {
-                        const resData: ThemeListChangeData = res.data;
-                        this.setState({ themeList: resData });
-                    }
-                    break;
-                case BackOut.GAME_CHANGE:
-                    {
-                        // We don't track selected game here, so we'll just force a game update anyway
+                switch (index) {
+                    case BackInit.PLAYLISTS: {
+                        const playlists = await window.External.back.request(BackIn.GET_PLAYLISTS);
                         this.setState({
-                            currentGameRefreshKey:
-                                this.state.currentGameRefreshKey + 1,
+                            playlists,
                         });
+                        this.cachePlaylistIcons(
+                            playlists
+                        );
+                        break;
                     }
-                    break;
+                }
             }
+
+            this.setState({ loaded });
+        });
+
+        window.External.back.register(BackOut.LOG_ENTRY_ADDED, (event, entry, index) => {
+            window.External.log.entries[index - window.External.log.offset] = entry;
+        });
+
+        window.External.back.register(BackOut.LOCALE_UPDATE, (event, localeCode) => {
+            this.setState({ localeCode });
+        });
+
+        window.External.back.register(BackOut.GAME_CHANGE, () => {
+            // We don't track selected game here, so we'll just force a game update anyway
+            this.setState({
+                currentGameRefreshKey:
+                    this.state.currentGameRefreshKey + 1,
+            });
+        });
+
+        window.External.back.register(BackOut.THEME_CHANGE, (event, theme) => {
+            if (this.props.preferencesData.currentTheme !== theme) {
+                setTheme(theme);
+            }
+        });
+
+        window.External.back.register(BackOut.THEME_LIST_CHANGE, (event, themeList) => {
+            this.setState({ themeList });
+        });
+
+        window.External.back.register(BackOut.PLAYLIST_REMOVE, (event, filename) => {
+            const index = this.state.playlists.findIndex(
+                (p) => p.filename === filename
+            );
+            if (index >= 0) {
+                const playlists = [...this.state.playlists];
+                playlists.splice(index, 1);
+
+                const cache: Record<string, string> = {
+                    ...this.state.playlistIconCache,
+                };
+                const filename =
+                    this.state.playlists[index].filename;
+                if (filename in cache) {
+                    delete cache[filename];
+                }
+
+                this.setState({
+                    playlists: playlists,
+                    playlistIconCache: cache,
+                });
+            }
+        });
+
+        window.External.back.request(BackIn.INIT_LISTEN)
+        .then((data) => {
+            const nextLoaded = { ...this.state.loaded };
+            for (const key of data) {
+                nextLoaded[key] = true;
+            }
+            this.setState({ loaded: nextLoaded });
         });
 
         // Cache playlist icons (if they are loaded)
@@ -394,7 +338,6 @@ class App extends React.Component<AppProps, AppState> {
             playlists: playlists,
             appPaths: this.state.appPaths,
             playlistIconCache: this.state.playlistIconCache,
-            onLaunchGame: this.onLaunchGame,
             libraries: this.props.libraries,
             localeCode: this.state.localeCode,
             order: this.state.order,
@@ -534,12 +477,6 @@ class App extends React.Component<AppProps, AppState> {
         });
     };
 
-    onLaunchGame(gameId: string): void {
-        window.External.back.send<LaunchGameData>(BackIn.LAUNCH_GAME, {
-            id: gameId,
-        });
-    }
-
     cachePlaylistIcons(playlists: GamePlaylist[]): void {
         Promise.all(
             playlists.map((p) =>
@@ -616,11 +553,4 @@ async function cacheIcon(icon: string): Promise<string> {
     const r = await fetch(icon);
     const blob = await r.blob();
     return `url(${URL.createObjectURL(blob)})`;
-}
-
-function log(content: string): void {
-    window.External.back.send<any, AddLogData>(BackIn.ADD_LOG, {
-        source: "Launcher",
-        content: content,
-    });
 }

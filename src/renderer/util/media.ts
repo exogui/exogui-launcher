@@ -18,8 +18,8 @@ export function loadPlatformVideos(platform: string): GameVideosCollection {
 
     if (fs.existsSync(videosPath)) {
         const files = fs
-            .readdirSync(videosPath)
-            .filter((f) => f.endsWith(".mp4"));
+        .readdirSync(videosPath)
+        .filter((f) => f.endsWith(".mp4"));
         for (const s of files) {
             videos[s.split(".mp4")[0]] = encodeURIComponent(s);
         }
@@ -49,11 +49,11 @@ const thumbnailPreference = [
 // Instead of first load all videos and then in mapGamesMedia map it to game we may search for the video when game is initialized
 // and after is installed, but for that we need to ensure that on installation video is extracted first and then game
 
-/// Search for the medias for the game in the images and videos collection and fill this info to the game metadata object
+// / Search for the medias for the game in the images and videos collection and fill this info to the game metadata object
 function getGameTitleForVideo(game: IGameInfo) {
     const gameTitle = path
-        .basename(fixSlashes(game.applicationPath))
-        .split(".")[0];
+    .basename(fixSlashes(game.applicationPath))
+    .split(".")[0];
     return gameTitle;
 }
 
@@ -185,9 +185,9 @@ function getGameTitleIndexFromFilename(filename: string) {
 function convertToGameTitleIndex(title: string) {
     // Remove unnecessary characters and stuff and lowercase
     return title
-        .replace(/[:;?'"/\\]/g, "_")
-        .trim()
-        .toUpperCase();
+    .replace(/[:;?'"/\\]/g, "_")
+    .trim()
+    .toUpperCase();
 }
 
 export function* walkSync(dir: string): IterableIterator<IFileInfo> {
@@ -218,35 +218,35 @@ export function createVideosWatcher(platform: string): chokidar.FSWatcher {
     });
 
     watcher
-        .on("add", (videoPath) => {
-            console.debug(`Video ${videoPath} added.`);
-            const relativePath = videoPath.replace(
-                window.External.config.fullExodosPath,
-                ""
-            );
-            const title = relativePath.split("/").pop()?.split(".mp4")[0];
-            if (title) {
-                const game = getGameByTitle(title);
-                if (game) {
-                    console.debug(
-                        `Found the game for the new video. Updating game ${title}`
-                    );
-                    const updatedGame = deepCopy(game);
-                    updatedGame.media.video = relativePath;
-                    // HACK: Sometimes extraction of the video is not finished but the view was refreshed and the video doesn't start. Added delay.
-                    setTimeout(
-                        () =>
-                            store.dispatch(
-                                updateGame({
-                                    game: updatedGame,
-                                })
-                            ),
-                        2000
-                    );
-                }
+    .on("add", (videoPath) => {
+        console.debug(`Video ${videoPath} added.`);
+        const relativePath = videoPath.replace(
+            window.External.config.fullExodosPath,
+            ""
+        );
+        const title = relativePath.split("/").pop()?.split(".mp4")[0];
+        if (title) {
+            const game = getGameByTitle(title);
+            if (game) {
+                console.debug(
+                    `Found the game for the new video. Updating game ${title}`
+                );
+                const updatedGame = deepCopy(game);
+                updatedGame.media.video = relativePath;
+                // HACK: Sometimes extraction of the video is not finished but the view was refreshed and the video doesn't start. Added delay.
+                setTimeout(
+                    () =>
+                        store.dispatch(
+                            updateGame({
+                                game: updatedGame,
+                            })
+                        ),
+                    2000
+                );
             }
-        })
-        .on("error", (error) => console.log(`Watcher error: ${error}`));
+        }
+    })
+    .on("error", (error) => console.log(`Watcher error: ${error}`));
 
     return watcher;
 }

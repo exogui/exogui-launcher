@@ -1,14 +1,16 @@
+import { IAppCommandsMappingData } from "@shared/mappings/interfaces";
+import { SocketTemplate } from "@shared/socket/types";
 import { MessageBoxOptions, OpenExternalOptions } from "electron";
 import { IAppConfigData } from "../config/interfaces";
 import { IAdditionalApplicationInfo, IGameInfo } from "../game/interfaces";
-import { GamePlaylist, ExecMapping } from "../interfaces";
+import { ExecMapping, GamePlaylist } from "../interfaces";
 import { ILogEntry, ILogPreEntry } from "../Log/interface";
 import { IAppPreferencesData } from "../preferences/interfaces";
 import { Theme } from "../ThemeFile";
-import { IAppCommandsMappingData } from "@shared/mappings/interfaces";
 
 export enum BackIn {
     GENERIC_RESPONSE,
+    KEEP_ALIVE,
     INIT_LISTEN,
     GET_GAMES_TOTAL,
     SET_LOCALE,
@@ -41,6 +43,38 @@ export enum BackIn {
     SET_VOLUME,
 }
 
+type UnknownCallback = (...args: any[]) => any;
+
+export type BackInTemplate = SocketTemplate<BackIn, {
+    [BackIn.GENERIC_RESPONSE]: UnknownCallback;
+    [BackIn.KEEP_ALIVE]: () => void;
+    [BackIn.INIT_LISTEN]: () => BackInit[];
+    [BackIn.GET_GAMES_TOTAL]: UnknownCallback;
+    [BackIn.SET_LOCALE]: (localeCode: string) => void;
+    [BackIn.GET_EXEC]: () => ExecMapping[];
+    [BackIn.SAVE_GAME]: UnknownCallback;
+    [BackIn.GET_GAME]: UnknownCallback;
+    [BackIn.GET_ALL_GAMES]: UnknownCallback;
+    [BackIn.RANDOM_GAMES]: UnknownCallback;
+    [BackIn.LAUNCH_GAME]: (game: IGameInfo, addApps: IAdditionalApplicationInfo[]) => void;
+    [BackIn.LAUNCH_GAME_SETUP]: (game: IGameInfo, addApps: IAdditionalApplicationInfo[]) => void;
+    [BackIn.LAUNCH_ADDAPP]: (game: IGameInfo, addApp: IAdditionalApplicationInfo) => void;
+    [BackIn.QUICK_SEARCH]: UnknownCallback;
+    [BackIn.ADD_LOG]: (log: ILogPreEntry) => void;
+    [BackIn.GET_PLAYLISTS]: () => GamePlaylist[];
+    [BackIn.LAUNCH_COMMAND]: (filePath: string) => void;
+    [BackIn.QUIT]: () => void;
+    [BackIn.BROWSE_VIEW_PAGE]: UnknownCallback;
+    [BackIn.BROWSE_VIEW_INDEX]: UnknownCallback;
+    [BackIn.GET_RENDERER_INIT_DATA]: () => GetRendererInitDataResponse;
+    [BackIn.GET_MAIN_INIT_DATA]: () => GetMainInitDataResponse;
+    [BackIn.UPDATE_CONFIG]: (data: UpdateConfigData) => void;
+    [BackIn.UPDATE_PREFERENCES]: (data: IAppPreferencesData) => void;
+    [BackIn.PLAY_AUDIO_FILE]: (filePath: string) => void;
+    [BackIn.TOGGLE_MUSIC]: (newState: boolean) => void;
+    [BackIn.SET_VOLUME]: (volume: number) => void;
+}>;
+
 export enum BackOut {
     GENERIC_RESPONSE,
     INIT_EVENT,
@@ -60,6 +94,37 @@ export enum BackOut {
     GAME_CHANGE,
     QUIT,
 }
+
+export type BackOutTemplate = SocketTemplate<BackOut, {
+    [BackOut.GENERIC_RESPONSE]: UnknownCallback;
+    [BackOut.INIT_EVENT]: (done: BackInit[]) => void;
+    [BackOut.OPEN_DIALOG]: (options: MessageBoxOptions) => Promise<number>;
+    [BackOut.OPEN_EXTERNAL]: (url: string, options?: OpenExternalOptions) => void;
+    [BackOut.LOCALE_UPDATE]: (localeCode: string) => void;
+    [BackOut.BROWSE_VIEW_PAGE_RESPONSE]: UnknownCallback;
+    [BackOut.GET_MAIN_INIT_DATA]: UnknownCallback;
+    [BackOut.UPDATE_PREFERENCES_RESPONSE]: (data: IAppPreferencesData) => void;
+    [BackOut.BROWSE_CHANGE]: UnknownCallback;
+    [BackOut.IMAGE_CHANGE]: UnknownCallback;
+    [BackOut.LOG_ENTRY_ADDED]: (entry: ILogEntry, index: number) => void;
+    [BackOut.THEME_CHANGE]: (theme: string) => void;
+    [BackOut.THEME_LIST_CHANGE]: (themeList: Theme[]) => void;
+    [BackOut.PLAYLIST_UPDATE]: UnknownCallback;
+    [BackOut.PLAYLIST_REMOVE]: (filename: string) => void;
+    [BackOut.GAME_CHANGE]: (game: IGameInfo) => void;
+    [BackOut.QUIT]: UnknownCallback;
+}>;
+
+export const BackRes = {
+    ...BackOut,
+    ...BackIn
+};
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export type BackRes = BackOut | BackIn;
+export type BackResTemplate = BackOutTemplate & BackInTemplate;
+export type BackResParams<T extends BackRes> = Parameters<BackResTemplate[T]>;
+export type BackResReturnTypes<T extends BackRes> = ReturnType<BackResTemplate[T]>;
 
 export type WrappedRequest<T = any> = {
     /** Identifier of the response */
@@ -85,7 +150,6 @@ export type BackInitArgs = {
     /** Secret string used for authentication. */
     secret: string;
     isDev: boolean;
-    localeCode: string;
     exePath: string;
     basePath: string;
     /** If the back should accept remote clients to connect (renderers from different machines). */
@@ -128,6 +192,8 @@ export type LocaleUpdateData = string;
 export type GetExecData = ExecMapping[];
 
 export type OpenDialogData = MessageBoxOptions;
+
+export type ShowMessageBoxFunc = (options: MessageBoxOptions) => Promise<number>;
 
 export type OpenDialogResponseData = number;
 

@@ -156,15 +156,15 @@ function filterPlaylist(
     // Installed playlists are a special case
     if (playlist.filename.startsWith(INSTALLED_GAMES_PLAYLIST_PREFIX)) {
         // Purely rely on games installed state for these
-        const platformName = playlist.filename.split('_').slice(1).join('_');
+        const platformName = playlist.filename.split("_").slice(1).join("_");
         return games.filter(g => g.installed && g.platform === platformName);
     } else {
         const filteredGames: IGameInfo[] = [];
 
         // Add games normally
-        for (let gameEntry of playlist.games) {
+        for (const gameEntry of playlist.games) {
             const id = gameEntry.id;
-            for (let game of games) {
+            for (const game of games) {
                 if (game.id === id) {
                     filteredGames.push(game);
                     break;
@@ -269,9 +269,9 @@ function filterSearch(text: string, games: IGameInfo[]): IGameInfo[] {
                 if (
                     gameField === undefined ||
                     gameField
-                        .toString()
-                        .toLowerCase()
-                        .indexOf(filter.phrase.toLowerCase()) === -1
+                    .toString()
+                    .toLowerCase()
+                    .indexOf(filter.phrase.toLowerCase()) === -1
                 ) {
                     if (!filter.inverse) {
                         filteredGames[i] = undefined;
@@ -286,7 +286,7 @@ function filterSearch(text: string, games: IGameInfo[]): IGameInfo[] {
     }
     // Remove nulled entries
     const finalFilteredGames: IGameInfo[] = [];
-    for (let game of filteredGames) {
+    for (const game of filteredGames) {
         if (game) {
             finalFilteredGames.push(game);
         }
@@ -317,7 +317,7 @@ function parseSearchText(text: string): ParsedSearch {
     // Parse search string
     let match;
     while ((match = regex.exec(text))) {
-        // eslint-disable-line no-cond-assign
+
         const preIndex = match.index - 1;
         // Field filter matches
         if (match[1]) {

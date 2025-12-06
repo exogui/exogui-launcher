@@ -63,7 +63,7 @@ gulp.task("build-renderer", async (done) => {
 
 gulp.task("copy-static", () => {
     return gulp
-        .src(config.static.src + "/**/*")
+        .src(config.static.src + "/**/*", { encoding: false })
         .pipe(gulp.dest(config.static.dest));
 });
 

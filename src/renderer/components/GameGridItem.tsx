@@ -78,7 +78,7 @@ export function GameGridItem(props: GameGridItemProps) {
                     <div
                         className={`game-grid-item__thumb__image ${
                             isInstalled
-                                ? `game-grid-item__thumb--installed`
+                                ? "game-grid-item__thumb--installed"
                                 : ""
                         }`}
                         style={thumbnailStyle}
@@ -112,7 +112,7 @@ export function GameGridItem(props: GameGridItemProps) {
 }
 
 export namespace GameGridItem {
-    // eslint-disable-line no-redeclare
+
     /** ID of the attribute used to store the game's id. */
     export const idAttribute: string = "data-game-id";
 

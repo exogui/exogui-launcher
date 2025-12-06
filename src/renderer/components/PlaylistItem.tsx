@@ -30,7 +30,7 @@ export function PlaylistItem(props: PlaylistItemProps) {
 
     const icon = useMemo(() => {
         return props.playlistIconCache[
-            props.iconFilename || props.playlist.filename
+        props.iconFilename || props.playlist.filename
         ];
     }, [
         props.iconFilename,

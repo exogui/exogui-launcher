@@ -1,15 +1,13 @@
-import { LogFunc } from "@back/types";
 import * as http from "http";
 
 export interface IFileServerOpts {
     server: http.Server;
     minPort: number;
     maxPort: number;
-    log: LogFunc;
 }
 
 export function startFileServer(opts: IFileServerOpts): Promise<number> {
-    const { minPort, maxPort, server, log } = opts;
+    const { minPort, maxPort, server } = opts;
 
     return new Promise<number>((resolve) => {
         let port = minPort - 1;
@@ -44,10 +42,7 @@ export function startFileServer(opts: IFileServerOpts): Promise<number> {
             server.off("listening", onceListening);
             server.off("error", onError);
             if (error) {
-                log({
-                    source: "Back",
-                    content: "Failed to open HTTP server.\n" + error,
-                });
+                log("Back", "Failed to open HTTP server.\n" + error);
                 resolve(-1);
             } else {
                 resolve(port);

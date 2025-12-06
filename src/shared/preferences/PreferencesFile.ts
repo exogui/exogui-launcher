@@ -43,16 +43,16 @@ export namespace PreferencesFile {
     ): Promise<IAppPreferencesData> {
         return new Promise((resolve, reject) => {
             readJsonFile(filePath, fileEncoding)
-                .then((json) =>
-                    resolve(
-                        overwritePreferenceData(
-                            deepCopy(defaultPreferencesData),
-                            json,
-                            onError
-                        )
+            .then((json) =>
+                resolve(
+                    overwritePreferenceData(
+                        deepCopy(defaultPreferencesData),
+                        json,
+                        onError
                     )
                 )
-                .catch(reject);
+            )
+            .catch(reject);
         });
     }
 
