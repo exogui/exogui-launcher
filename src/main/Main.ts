@@ -1,13 +1,8 @@
 import * as remoteMain from "@electron/remote/main";
-import { SharedSocket } from "@shared/back/SharedSocket";
+import { SocketClient } from "@shared/back/SocketClient";
 import {
     BackIn,
-    BackInitArgs,
-    BackOut,
-    GetMainInitDataResponse,
-    SetLocaleData,
-    WrappedRequest,
-    WrappedResponse,
+    BackInitArgs
 } from "@shared/back/types";
 import { IAppConfigData } from "@shared/config/interfaces";
 import { APP_TITLE } from "@shared/constants";
@@ -19,28 +14,20 @@ import {
 } from "@shared/preferences/interfaces";
 import { createErrorProxy } from "@shared/Util";
 import { ChildProcess, fork } from "child_process";
-import { randomBytes } from "crypto";
 import {
     app,
     BrowserWindow,
-    dialog,
     ipcMain,
     IpcMainEvent,
     screen,
     session,
-    shell,
+    shell
 } from "electron";
 import * as fs from "fs";
 import * as path from "path";
-import { promisify } from "util";
 import * as WebSocket from "ws";
 import { Init } from "./types";
 import * as Util from "./Util";
-
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-
-const TIMEOUT_DELAY = 60_000;
 
 type MainState = {
     window?: BrowserWindow;
@@ -51,7 +38,7 @@ type MainState = {
     _version: number;
     preferences?: IAppPreferencesData;
     config?: IAppConfigData;
-    socket: SharedSocket<WebSocket>;
+    socket: SocketClient<WebSocket>;
     backProc?: ChildProcess;
     _sentLocaleCode: boolean;
     /** If the main is about to quit. */
@@ -64,15 +51,13 @@ export function main(init: Init): void {
     const state: MainState = {
         window: undefined,
         _installed: undefined,
-        backHost: init.args["connect-remote"]
-            ? new URL("ws://" + init.args["connect-remote"])
-            : new URL("ws://127.0.0.1"),
+        backHost: new URL("ws://localhost"),
         _secret: "",
         /** Version of the launcher (timestamp of when it was built). Negative value if not found or not yet loaded. */
         _version: -2,
         preferences: undefined,
         config: undefined,
-        socket: new SharedSocket(WebSocket),
+        socket: new SocketClient(WebSocket),
         backProc: undefined,
         _sentLocaleCode: false,
         isQuitting: false,
@@ -81,7 +66,7 @@ export function main(init: Init): void {
 
     startup();
 
-    function startup() {
+    async function startup() {
         if (process.env.APPIMAGE) {
             app.commandLine.appendSwitch("no-sandbox");
         }
@@ -97,222 +82,92 @@ export function main(init: Init): void {
         // Add IPC event listener(s)
         ipcMain.on(InitRendererChannel, onInit);
 
-        // Add Socket event listener(s)
-        state.socket.on("message", onMessage);
-
         // ---- Initialize ----
         // Check if installed
-        let p = exists("./.installed")
-            .then((exists) => {
-                state._installed = exists;
-                state.mainFolderPath = Util.getMainFolderPath();
-                console.log("Main folder: " + state.mainFolderPath);
-            })
-            // Load version number
-            .then(
-                () =>
-                    new Promise((resolve) => {
-                        fs.readFile(
-                            path.join(state.mainFolderPath, ".version"),
-                            (_, data) => {
-                                state._version = data
-                                    ? parseInt(
-                                          data.toString().replace(/[^\d]/g, ""),
-                                          10
-                                      ) // (Remove all non-numerical characters, then parse it as a string)
-                                    : -1; // (Version not found error code)
-                                resolve(null);
-                            }
-                        );
-                    })
-            )
-            // Load or generate secret
-            .then(async () => {
-                if (
-                    init.args["connect-remote"] ||
-                    init.args["host-remote"] ||
-                    init.args["back-only"]
-                ) {
-                    const secretFilePath = path.join(
-                        state.mainFolderPath,
-                        "secret.txt"
-                    );
-                    try {
-                        state._secret = await readFile(secretFilePath, {
-                            encoding: "utf8",
-                        });
-                    } catch (e) {
-                        state._secret = randomBytes(2048).toString("hex");
-                        try {
-                            await writeFile(secretFilePath, state._secret, {
-                                encoding: "utf8",
-                            });
-                        } catch (e) {
-                            console.warn(
-                                `Failed to save new secret to disk.\n${e}`
-                            );
-                        }
-                    }
-                } else {
-                    state._secret = randomBytes(2048).toString("hex");
-                }
-            });
+        state._installed = false;
+        state.mainFolderPath = Util.getMainFolderPath();
+        console.log("Main folder: " + state.mainFolderPath);
+        const versionFile = fs.readFileSync(path.join(state.mainFolderPath, ".version"));
+        state._version = versionFile
+            ? parseInt(
+                versionFile.toString().replace(/[^\d]/g, ""),
+                10
+            ) // (Remove all non-numerical characters, then parse it as a string)
+            : -1; // (Version not found error code)
+
         // Start back process
         if (!init.args["connect-remote"]) {
-            p = p.then(
-                () =>
-                    new Promise((resolve, reject) => {
-                        state.backProc = fork(
-                            path.join(__dirname, "../back/index.js"),
-                            undefined,
-                            { detached: true }
+            await new Promise<void>((resolve, reject) => {
+                state.backProc = fork(
+                    path.join(__dirname, "../back/index.js"),
+                    undefined,
+                    { detached: true }
+                );
+                // Wait for process to initialize
+                state.backProc.once("message", (msg) => {
+                    const port = parseInt(msg.toString());
+                    if (port >= 0) {
+                        state.backHost.port = port.toString();
+                        resolve();
+                    } else {
+                        reject(
+                            new Error(
+                                "Failed to start server in back process. Perhaps because it could not find an available port."
+                            )
                         );
-                        // Wait for process to initialize
-                        state.backProc.once("message", (msg) => {
-                            const port = parseInt(msg.toString());
-                            if (port >= 0) {
-                                state.backHost.port = port.toString();
-                                resolve();
-                            } else {
-                                reject(
-                                    new Error(
-                                        "Failed to start server in back process. Perhaps because it could not find an available port."
-                                    )
-                                );
-                            }
-                        });
-                        // On windows you have to wait for app to be ready before you call app.getLocale() (so it will be sent later)
-                        let localeCode: string = "en";
-                        if (process.platform === "win32" && !app.isReady()) {
-                            localeCode = "en";
-                        } else {
-                            localeCode = app.getLocale().toLowerCase();
-                            state._sentLocaleCode = true;
-                        }
-                        // Send initialize message
-                        const msg: BackInitArgs = {
-                            configFolder: state.mainFolderPath,
-                            secret: state._secret,
-                            isDev: Util.isDev,
-                            // On windows you have to wait for app to be ready before you call app.getLocale() (so it will be sent later)
-                            localeCode: localeCode,
-                            exePath: path.dirname(app.getPath("exe")),
-                            basePath: process.env.APPIMAGE
-                                ? app.getAppPath()
-                                : (process.platform === 'darwin' && !Util.isDev)
-                                    ? path.dirname(path.dirname(path.dirname(path.dirname(app.getPath("exe")))))
-                                    : process.cwd(),
-                            acceptRemote: !!init.args["host-remote"],
-                        };
-                        state.backProc.send(JSON.stringify(msg));
-                    })
-            );
+                    }
+                });
+                // Send initialize message
+                const msg: BackInitArgs = {
+                    configFolder: state.mainFolderPath,
+                    secret: state._secret,
+                    isDev: Util.isDev,
+                    exePath: path.dirname(app.getPath("exe")),
+                    basePath: process.env.APPIMAGE
+                        ? app.getAppPath()
+                        : (process.platform === "darwin" && !Util.isDev)
+                            ? path.dirname(path.dirname(path.dirname(path.dirname(app.getPath("exe")))))
+                            : process.cwd(),
+                    acceptRemote: !!init.args["host-remote"],
+                };
+                state.backProc.send(JSON.stringify(msg));
+            });
         }
         // Connect to back and start renderer
         if (!init.args["back-only"]) {
-            // Connect to back process
-            p = p
-                .then<WebSocket>(() =>
-                    timeout(
-                        new Promise((resolve, reject) => {
-                            const ws = new WebSocket(state.backHost.href);
-                            ws.onclose = () => {
-                                reject(
-                                    new Error(
-                                        "Failed to authenticate connection to back."
-                                    )
-                                );
-                            };
-                            ws.onerror = (event) => {
-                                reject(event.error);
-                            };
-                            ws.onopen = () => {
-                                ws.onmessage = () => {
-                                    ws.onclose = noop;
-                                    ws.onerror = noop;
-                                    resolve(ws);
-                                };
-                                ws.send(state._secret);
-                            };
-                        }),
-                        TIMEOUT_DELAY
-                    )
-                )
-                // Send init message
-                .then((ws) =>
-                    timeout(
-                        new Promise((resolve, _) => {
-                            ws.onmessage = (event) => {
-                                const res: WrappedResponse = JSON.parse(
-                                    event.data.toString()
-                                );
-                                if (res.type === BackOut.GET_MAIN_INIT_DATA) {
-                                    const data: GetMainInitDataResponse =
-                                        res.data;
-                                    state.preferences = data.preferences;
-                                    state.config = data.config;
-                                    state.socket.setSocket(ws);
-                                    resolve(null);
-                                }
-                            };
-                            const req: WrappedRequest = {
-                                id: "init",
-                                type: BackIn.GET_MAIN_INIT_DATA,
-                                data: undefined,
-                            };
-                            ws.send(JSON.stringify(req));
-                        }),
-                        TIMEOUT_DELAY
-                    )
-                )
-                // Create main window
-                .then(() =>
-                    app.whenReady().then(() => {
-                        createMainWindow();
-                    })
-                );
-        }
-        // Catch errors
-        p.catch((error) => {
-            console.error(error);
-            if (!Util.isDev) {
-                dialog.showMessageBoxSync({
-                    title: "Failed to start launcher!",
-                    type: "error",
-                    message:
-                        "Something went wrong while starting the launcher.\n\n" +
-                        error,
-                });
-            }
-            state.socket.disconnect();
-            app.quit();
-        });
-    }
+            console.log("connecting to back " + state.backHost.href);
 
-    function onMessage(res: WrappedResponse): void {
-        switch (res.type) {
-            case BackOut.QUIT:
-                {
-                    state.isQuitting = true;
-                    app.quit();
+            const waitForConnection = async () => {
+                while (true) {
+                    try {
+                        const socket = await SocketClient.connect(WebSocket, state.backHost.href, "exogui-launcher");
+                        console.log("Main connection established to backend");
+                        return socket;
+                    } catch (error) {
+                        console.log("Main connection failed to backend, waiting 1 seconds...");
+                        await new Promise<void>(resolve => setTimeout(resolve, 1000));
+                    }
                 }
-                break;
+            };
+
+            const socket = await waitForConnection();
+            state.socket.setSocket(socket);
+            state.socket.killOnDisconnect = true;
+
+            const mainData = await state.socket.request(BackIn.GET_MAIN_INIT_DATA);
+            state.preferences = mainData.preferences;
+            state.config = mainData.config;
+
+            app.whenReady().then(() => {
+                state.socket.send(BackIn.SET_LOCALE, app.getLocale().toLowerCase());
+                createMainWindow();
+            });
         }
     }
 
     function onAppReady(): void {
         if (!session.defaultSession) {
             throw new Error("Default session is missing!");
-        }
-        // Send locale code (if it has no been sent already)
-        if (process.platform === "win32" && !state._sentLocaleCode) {
-            const didSend = state.socket.send<any, SetLocaleData>(
-                BackIn.SET_LOCALE,
-                app.getLocale().toLowerCase()
-            );
-            if (didSend) {
-                state._sentLocaleCode = true;
-            }
         }
         // Reject all permission requests since we don't need any permissions.
         session.defaultSession.setPermissionRequestHandler((_, __, callback) =>
@@ -337,10 +192,8 @@ export function main(init: Init): void {
     function onAppWillQuit(event: Electron.Event): void {
         if (!init.args["connect-remote"] && !state.isQuitting) {
             // (Local back)
-            const result = state.socket.send(BackIn.QUIT, undefined);
-            if (result) {
-                event.preventDefault();
-            }
+            state.socket.send(BackIn.QUIT);
+            event.preventDefault();
         }
     }
 
@@ -379,18 +232,6 @@ export function main(init: Init): void {
             secret: state._secret,
         };
         event.returnValue = data;
-    }
-
-    function exists(filePath: string): Promise<boolean> {
-        return new Promise((resolve) => {
-            fs.stat(filePath, (error, stats) => {
-                if (error) {
-                    resolve(false);
-                } else {
-                    resolve(stats.isFile());
-                }
-            });
-        });
     }
 
     function getInitialWindowSize(): IAppPreferencesDataMainWindow {
@@ -518,30 +359,4 @@ export function main(init: Init): void {
         });
         return window;
     }
-
-    /**
-     * Resolves/Rejects when the wrapped promise does. Rejects if the timeout happens before that.
-     * @param promise Promise to wrap.
-     * @param ms Time to wait before timing out (in ms).
-     */
-    function timeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-        return new Promise((resolve, reject) => {
-            const handle = setTimeout(() => {
-                reject(
-                    new Error(`Timeout (${(ms / 1000).toFixed(1)} seconds).`)
-                );
-            }, ms);
-            promise
-                .then((arg) => {
-                    clearTimeout(handle);
-                    resolve(arg);
-                })
-                .catch((error) => {
-                    clearTimeout(handle);
-                    reject(error);
-                });
-        });
-    }
-
-    function noop() {}
 }

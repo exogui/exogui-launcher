@@ -1,15 +1,12 @@
 import { app } from "@electron/remote";
-import { englishTranslation } from "@renderer/lang/en";
-import { BackIn, LaunchExodosContentData } from "@shared/back/types";
-import { ExodosBackendInfo, GamePlaylist } from "@shared/interfaces";
+import { BackIn } from "@shared/back/types";
+import { ExodosBackendInfo } from "@shared/interfaces";
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { WithPreferencesProps } from "../../containers/withPreferences";
 import { OpenIcon, OpenIconType } from "../OpenIcon";
 
 type OwnProps = {
-    playlists: GamePlaylist[];
-    onLaunchGame: (gameId: string) => void;
     /** Callback to initiate the update */
     exodosBackendInfo: ExodosBackendInfo | undefined;
 };
@@ -17,14 +14,8 @@ type OwnProps = {
 export type HomePageProps = OwnProps & WithPreferencesProps;
 
 export function HomePage(props: HomePageProps) {
-    const allStrings = englishTranslation;
-    const strings = allStrings.home;
-
     const onLaunchCommand = React.useCallback((commandPath: any) => {
-        window.External.back.send<any, LaunchExodosContentData>(
-            BackIn.LAUNCH_COMMAND,
-            { path: commandPath }
-        );
+        window.External.back.send(BackIn.LAUNCH_COMMAND, commandPath);
     }, []);
 
     const renderedSetupSection = React.useMemo(
@@ -65,7 +56,7 @@ export function HomePage(props: HomePageProps) {
                 </ul>
             </div>
         ),
-        [strings, onLaunchCommand]
+        [onLaunchCommand]
     );
 
     const renderedDocs = React.useMemo(
@@ -112,7 +103,7 @@ export function HomePage(props: HomePageProps) {
                 </ul>
             </div>
         ),
-        [strings, onLaunchCommand]
+        [onLaunchCommand]
     );
 
     const renderedChangelog = React.useMemo(
@@ -122,17 +113,17 @@ export function HomePage(props: HomePageProps) {
                 <ul className="home-page__box-body home-page__changelog">
                     {props.exodosBackendInfo
                         ? props.exodosBackendInfo.changelog
-                              .split("\n")
-                              .map((line, idx) => (
-                                  <div key={`changelog-${idx}-line`}>
-                                      {line.trim() ? line : <br />}
-                                  </div>
-                              ))
+                        .split("\n")
+                        .map((line, idx) => (
+                            <div key={`changelog-${idx}-line`}>
+                                {line.trim() ? line : <br />}
+                            </div>
+                        ))
                         : ""}
                 </ul>
             </div>
         ),
-        [props.exodosBackendInfo, strings]
+        [props.exodosBackendInfo]
     );
 
     const renderedGreetings = React.useMemo(

@@ -22,11 +22,11 @@ export function stringifyLogEntries(
                 str +=
                     entry.source !== prevEntry.source
                         ? `<span class="log__source log__source--${getClassModifier(
-                              entry.source,
-                          )}">${padStart(
-                              escapeHTML(entry.source),
-                              sourceChars,
-                          )}:</span> `
+                            entry.source,
+                        )}">${padStart(
+                            escapeHTML(entry.source),
+                            sourceChars,
+                        )}:</span> `
                         : " ".repeat(sourceChars + 2);
             }
             str += padLines(
@@ -56,9 +56,9 @@ export function stringifyLogEntriesRaw(
                 str +=
                     entry.source !== prevEntry.source
                         ? `${padStart(
-                              escapeHTML(entry.source),
-                              sourceChars,
-                          )} | `
+                            escapeHTML(entry.source),
+                            sourceChars,
+                        )} | `
                         : " ".repeat(sourceChars + 2);
             }
             str += padLines(entry.content, timeChars + sourceChars + 2);
@@ -83,9 +83,9 @@ export function formatTime(date: Date): string {
 /** Mak a string safe to use as HTML content (only safe if used as "text" between tags, not inside a tag) */
 export function escapeHTML(str: string): string {
     return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 /**
@@ -94,9 +94,9 @@ export function escapeHTML(str: string): string {
  */
 function getClassModifier(source: string): string {
     return source
-        .toLowerCase()
-        .replace(/ /g, "-")
-        .replace(/[^a-z-]/gi, ""); // (Only allow a-z and "-")
+    .toLowerCase()
+    .replace(/ /g, "-")
+    .replace(/[^a-z-]/gi, ""); // (Only allow a-z and "-")
 }
 
 /** Pad all lines (except for the first one) by a number of spaces */

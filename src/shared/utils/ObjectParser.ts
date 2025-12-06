@@ -136,7 +136,7 @@ class ObjectParserProp<P> implements IObjectParserProp<P> {
     map(func: ObjectParserMapFunc<P>): this {
         const prop = this._property;
         if (typeof prop === "object" && prop !== null && !Array.isArray(prop)) {
-            for (let label in prop) {
+            for (const label in prop) {
                 const item = new ObjectParserProp(
                     prop[label],
                     this._context,
@@ -162,7 +162,7 @@ class ObjectParserProp<P> implements IObjectParserProp<P> {
     mapRaw(func: ObjectParserMapRawFunc<P>): this {
         const prop = this._property;
         if (typeof prop === "object" && prop !== null && !Array.isArray(prop)) {
-            for (let label in prop) {
+            for (const label in prop) {
                 func(prop[label], label, prop);
             }
         } else {
@@ -305,7 +305,7 @@ export class ObjectParser<T> extends ObjectParserProp<T> {
  */
 function createStack(
     stack: string[],
-    label: string | number | Symbol
+    label: string | number | symbol
 ): string[] {
     const newStack = stack.slice();
     newStack.push(label + "");

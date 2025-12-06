@@ -1,10 +1,16 @@
 import { shell } from "@electron/remote";
+import { faFolder } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { englishTranslation } from "@renderer/lang/en";
+import { loadDynamicAddAppsForGame } from "@renderer/util/addApps";
+import { openGameConfigDirectory } from "@renderer/util/games";
 import { fixSlashes } from "@shared/Util";
 import { LOGOS, SCREENSHOTS } from "@shared/constants";
 import { IAdditionalApplicationInfo, IGameInfo } from "@shared/game/interfaces";
 import { GamePlaylistEntry } from "@shared/interfaces";
 import { MenuItemConstructorOptions } from "electron";
+import { promises as fs } from "fs";
+import * as path from "path";
 import * as React from "react";
 import { getGameImagePath, openContextMenu } from "../Util";
 import { WithPreferencesProps } from "../containers/withPreferences";
@@ -13,12 +19,6 @@ import { FormattedGameMedia, GameImageCarousel } from "./GameImageCarousel";
 import { MediaPreview } from "./ImagePreview";
 import { InputField } from "./InputField";
 import { RightBrowseSidebarAddApp } from "./RightBrowseSidebarAddApp";
-import { promises as fs } from "fs";
-import * as path from "path";
-import { loadDynamicAddAppsForGame } from "@renderer/util/addApps";
-import { openGameConfigDirectory } from "@renderer/util/games";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFolder } from "@fortawesome/free-solid-svg-icons";
 
 type OwnProps = {
     /** Currently selected game (if any) */
@@ -27,8 +27,6 @@ type OwnProps = {
     currentAddApps?: IAdditionalApplicationInfo[];
     /** Notes of the selected game in the selected playlist (if any) */
     currentPlaylistNotes?: string;
-    /* Current Library */
-    currentLibrary: string;
     /** Currently selected game entry (if any) */
     gamePlaylistEntry?: GamePlaylistEntry;
     /** Launch game */
@@ -277,8 +275,8 @@ export class RightBrowseSidebar extends React.Component<
                             <p>{strings.releaseYear}: </p>
                             <InputField
                                 text={new Date(game.releaseYear)
-                                    .getFullYear()
-                                    .toString()}
+                                .getFullYear()
+                                .toString()}
                                 placeholder={strings.noReleaseDate}
                                 className="browse-right-sidebar__searchable"
                             />

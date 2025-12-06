@@ -7,13 +7,13 @@ const ExodosResourcesTypeExtensions = {
     Documents: [".pdf", ".txt"],
     Scripts: [".command"],
 };
-const excludedFiles = [`exogui.command`];
+const excludedFiles = ["exogui.command"];
 
 // Update scripts
 const updateScriptFiles = [
-    `update.command`,
-    `updateScummVm.command`,
-    `update3x.command`,
+    "update.command",
+    "updateScummVm.command",
+    "update3x.command",
 ].map((f) => `eXo/Update/${f}`);
 
 // Label mapping
@@ -46,8 +46,8 @@ export const loadExoResources = async () => {
         Object.entries(ExodosResourcesTypeExtensions).forEach((te) => {
             const [type, extensions] = te;
             result[type] = rootFiles
-                .filter(withExtensonsFilter(extensions))
-                .map(mapToExoResource);
+            .filter(withExtensonsFilter(extensions))
+            .map(mapToExoResource);
         });
 
         const updateScripts = await getUpdateScriptsWithSeparator();
@@ -61,14 +61,14 @@ export const loadExoResources = async () => {
 const getUpdateScriptsWithSeparator = async () => {
     const result = [];
     const existingScripts = updateScriptFiles
-        .filter((f) => {
-            const filepath = path.join(
-                window.External.config.fullExodosPath,
-                f
-            );
-            return fs.existsSync(filepath);
-        })
-        .map(mapToExoResource);
+    .filter((f) => {
+        const filepath = path.join(
+            window.External.config.fullExodosPath,
+            f
+        );
+        return fs.existsSync(filepath);
+    })
+    .map(mapToExoResource);
     if (existingScripts.length > 0) {
         result.push(null);
         result.push(...existingScripts);

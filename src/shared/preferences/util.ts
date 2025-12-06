@@ -128,9 +128,9 @@ export function overwritePreferenceData(
                 "ascending"
             ))
     );
-    parser.prop('gameMusicVolume', (v) => (source.gameMusicVolume = num(v)), true);
-    parser.prop('gameMusicPlay', (v) => (source.gameMusicPlay = !!v), true);
-    parser.prop('vlcPort', v => (source.vlcPort = num(v)), true);
+    parser.prop("gameMusicVolume", (v) => (source.gameMusicVolume = num(v)), true);
+    parser.prop("gameMusicPlay", (v) => (source.gameMusicPlay = !!v), true);
+    parser.prop("vlcPort", v => (source.vlcPort = num(v)), true);
     parser.prop("defaultLibrary", (v) => (source.defaultLibrary = str(v)));
     parser.prop(
         "saveImportedCurations",
@@ -139,8 +139,8 @@ export function overwritePreferenceData(
     // Parse window object
     parseMainWindow(parser.prop("mainWindow"), source.mainWindow);
     parser
-        .prop("showLogSource")
-        .mapRaw((item, label) => (source.showLogSource[label] = !!item));
+    .prop("showLogSource")
+    .mapRaw((item, label) => (source.showLogSource[label] = !!item));
     // Done
     return source;
 }
@@ -169,7 +169,7 @@ function strOpt<T extends string>(
     defaultOption: T
 ): T {
     value = str(value);
-    for (let option of options) {
+    for (const option of options) {
         if (value === option) {
             return value;
         }

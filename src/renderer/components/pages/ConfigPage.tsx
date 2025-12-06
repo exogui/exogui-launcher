@@ -1,20 +1,19 @@
-import * as React from "react";
 import { WithPreferencesProps } from "@renderer/containers/withPreferences";
-import { BackIn, UpdateConfigData } from "@shared/back/types";
+import { englishTranslation } from "@renderer/lang/en";
+import { BackIn } from "@shared/back/types";
 import { updatePreferencesData } from "@shared/preferences/util";
 import { Theme } from "@shared/ThemeFile";
+import * as React from "react";
 import { isExodosValidCheck } from "../../Util";
 import { CheckBox } from "../CheckBox";
 import { ConfigExodosPathInput } from "../ConfigExodosPathInput";
 import { Dropdown } from "../Dropdown";
 import { DropdownInputField } from "../DropdownInputField";
-import { englishTranslation } from "@renderer/lang/en";
 type OwnProps = {
     /** List of all platforms */
     platforms: string[];
     /** Filenames of all files in the themes folder. */
     themeList: Theme[];
-    localeCode: string;
 };
 
 export type ConfigPageProps = OwnProps & WithPreferencesProps;
@@ -170,7 +169,7 @@ export class ConfigPage extends React.Component<
                                                 }
                                                 onToggle={
                                                     this
-                                                        .onUseCustomTitlebarChange
+                                                    .onUseCustomTitlebarChange
                                                 }
                                             />
                                         </div>
@@ -190,7 +189,7 @@ export class ConfigPage extends React.Component<
                                         <DropdownInputField
                                             text={
                                                 this.props.preferencesData
-                                                    .currentTheme || ""
+                                                .currentTheme || ""
                                             }
                                             placeholder={strings.noTheme}
                                             onChange={this.onCurrentThemeChange}
@@ -234,7 +233,7 @@ export class ConfigPage extends React.Component<
                                             <CheckBox
                                                 checked={
                                                     this.props.preferencesData
-                                                        .showDeveloperTab
+                                                    .showDeveloperTab
                                                 }
                                                 onToggle={
                                                     this.onShowDeveloperTab
@@ -325,17 +324,13 @@ export class ConfigPage extends React.Component<
 
     /** When the "Save & Restart" button is clicked. */
     onSaveAndRestartClick = () => {
-        // Save new config to file, then restart the app
-        window.External.back.send<any, UpdateConfigData>(
-            BackIn.UPDATE_CONFIG,
-            {
-                exodosPath: this.state.exodosPath,
-                useCustomTitlebar: this.state.useCustomTitlebar,
-            },
-            () => {
-                window.External.restart();
-            }
-        );
+        window.External.back.request(BackIn.UPDATE_CONFIG, {
+            exodosPath: this.state.exodosPath,
+            useCustomTitlebar: this.state.useCustomTitlebar
+        })
+        .then(() => {
+            window.External.restart();
+        });
     };
 }
 

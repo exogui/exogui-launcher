@@ -5,7 +5,7 @@ import {
     FieldFilter,
     GameFilter,
 } from "@shared/interfaces";
-import { getDefaultBooleanFilter, getDefaultCompareFilter, getDefaultFieldFilter, getDefaultGameFilter } from '@shared/utils/search';
+import { getDefaultBooleanFilter, getDefaultCompareFilter, getDefaultFieldFilter, getDefaultGameFilter } from "@shared/utils/search";
 
 enum KeyChar {
     MATCHES = ":",
@@ -49,7 +49,7 @@ export function parseUserInput(input: string): GameFilter {
 
             // Check for quick search shortcuts
             if (token.length > 1) {
-                let ch = token[0];
+                const ch = token[0];
                 switch (ch) {
                     case "#": {
                         token = token.slice(1);
@@ -71,7 +71,7 @@ export function parseUserInput(input: string): GameFilter {
         }
 
         // Opening quotes check
-        if (token.startsWith('"')) {
+        if (token.startsWith("\"")) {
             token = token.slice(1);
             capturingQuotes = true;
         }
@@ -86,10 +86,10 @@ export function parseUserInput(input: string): GameFilter {
         }
 
         // Closing quotes check
-        if (token.endsWith('"') && capturingQuotes) {
+        if (token.endsWith("\"") && capturingQuotes) {
             capturingQuotes = false;
             // Remove quote at end of working value, if doesn't exist then it's a broken quoted value
-            const suffixIdx = workingValue.lastIndexOf('"');
+            const suffixIdx = workingValue.lastIndexOf("\"");
             if (suffixIdx > -1) {
                 workingValue = workingValue.slice(0, suffixIdx);
             }
@@ -105,7 +105,7 @@ export function parseUserInput(input: string): GameFilter {
             workingKeyChar = getKeyChar(token);
 
             if (workingKeyChar) {
-                let parts = token.split(workingKeyChar);
+                const parts = token.split(workingKeyChar);
                 if (parts.length > 1) {
                     workingKey = parts[0];
                     token = parts.slice(1).join(workingKeyChar);
@@ -113,7 +113,7 @@ export function parseUserInput(input: string): GameFilter {
             }
 
             // Entire token is wrapped, must be a generic value
-            if (token.endsWith('"') && token.startsWith('"')) {
+            if (token.endsWith("\"") && token.startsWith("\"")) {
                 if (token.length == 2) {
                     if (workingKey !== "") {
                         // It has a key? Must be a deliberately empty value, fill with a replacement string for now
@@ -125,7 +125,7 @@ export function parseUserInput(input: string): GameFilter {
                 }
                 // Opening quote, but no key yet, must be the start of a spaced generic value
             } else {
-                if (token.startsWith('"')) {
+                if (token.startsWith("\"")) {
                     token = token.slice(1);
                     capturingQuotes = true;
                     workingValue = token;
@@ -158,16 +158,16 @@ export function parseUserInput(input: string): GameFilter {
                     `key: ${workingKey}, value: ${workingValue}, keychar: ${workingKeyChar}, negative: ${negative}, exact: ${exact}`
                 );
 
-                let list =
+                const list =
                     negative && exact
                         ? filter.exactBlacklist
                         : negative && !exact
-                        ? filter.blacklist
-                        : !negative && exact
-                        ? filter.exactWhitelist
-                        : filter.whitelist;
+                            ? filter.blacklist
+                            : !negative && exact
+                                ? filter.exactWhitelist
+                                : filter.whitelist;
 
-                let value = workingValue; // Reassign here so we can expand typings later, trust me
+                const value = workingValue; // Reassign here so we can expand typings later, trust me
 
                 let processed = true;
 

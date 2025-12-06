@@ -15,7 +15,7 @@ export function createGamesWatcher(platformCollection: IGameCollection) {
         2
     );
 
-    if (!!gamesRelativePath) {
+    if (gamesRelativePath) {
         const gamesAbsolutePath = path.join(
             window.External.config.fullExodosPath,
             gamesRelativePath
@@ -28,8 +28,8 @@ export function getGameByTitle(title: string) {
     const state = store.getState().gamesState;
     const game = state.games.find((g) => {
         const gameTitle = path
-            .basename(fixSlashes(g.applicationPath))
-            .split(".")[0];
+        .basename(fixSlashes(g.applicationPath))
+        .split(".")[0];
         return gameTitle === title;
     });
     return game;
@@ -57,47 +57,47 @@ function createWatcher(folder: string): chokidar.FSWatcher {
     });
 
     watcher
-        .on("addDir", (gameDataPath) => {
-            console.debug(`Game ${gameDataPath} added.`);
-            const game = getGameByDirectory(gameDataPath);
-            if (game) {
-                store.dispatch(
-                    updateGame({
-                        game: {
-                            ...game,
-                            installed: true,
-                        },
-                    })
-                );
-                const platformFilePath = path.join(
-                    window.External.config.fullExodosPath,
-                    window.External.config.data.platformFolderPath,
-                    `${game.library}.xml`
-                );
-                updateInstalledField(platformFilePath, game.id, true);
-            }
-        })
-        .on("unlinkDir", (gameDataPath) => {
-            console.debug(`Game ${gameDataPath} has been removed.`);
-            const game = getGameByDirectory(gameDataPath);
-            if (game) {
-                store.dispatch(
-                    updateGame({
-                        game: {
-                            ...game,
-                            installed: false,
-                        },
-                    })
-                );
-                const platformFilePath = path.join(
-                    window.External.config.fullExodosPath,
-                    window.External.config.data.platformFolderPath,
-                    `${game.library}.xml`
-                );
-                updateInstalledField(platformFilePath, game.id, false);
-            }
-        })
-        .on("error", (error) => console.log(`Watcher error: ${error}`));
+    .on("addDir", (gameDataPath) => {
+        console.debug(`Game ${gameDataPath} added.`);
+        const game = getGameByDirectory(gameDataPath);
+        if (game) {
+            store.dispatch(
+                updateGame({
+                    game: {
+                        ...game,
+                        installed: true,
+                    },
+                })
+            );
+            const platformFilePath = path.join(
+                window.External.config.fullExodosPath,
+                window.External.config.data.platformFolderPath,
+                `${game.library}.xml`
+            );
+            updateInstalledField(platformFilePath, game.id, true);
+        }
+    })
+    .on("unlinkDir", (gameDataPath) => {
+        console.debug(`Game ${gameDataPath} has been removed.`);
+        const game = getGameByDirectory(gameDataPath);
+        if (game) {
+            store.dispatch(
+                updateGame({
+                    game: {
+                        ...game,
+                        installed: false,
+                    },
+                })
+            );
+            const platformFilePath = path.join(
+                window.External.config.fullExodosPath,
+                window.External.config.data.platformFolderPath,
+                `${game.library}.xml`
+            );
+            updateInstalledField(platformFilePath, game.id, false);
+        }
+    })
+    .on("error", (error) => console.log(`Watcher error: ${error}`));
 
     return watcher;
 }

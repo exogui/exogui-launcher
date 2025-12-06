@@ -24,10 +24,10 @@ export function loadExecMappingsFile(
 ): Promise<ExecMapping[]> {
     return new Promise((resolve, reject) => {
         readJsonFile(path.join(jsonFolder, filePath), "utf8")
-            .then((json) => {
-                resolve(parseExecMappingsFile(json, onError).execs);
-            })
-            .catch(reject);
+        .then((json) => {
+            resolve(parseExecMappingsFile(json, onError).execs);
+        })
+        .catch(reject);
     });
 }
 
@@ -35,7 +35,7 @@ function parseExecMappingsFile(
     data: any,
     onError?: (error: string) => void,
 ): ExecMappingFile {
-    let parsed: ExecMappingFile = {
+    const parsed: ExecMappingFile = {
         execs: [],
     };
     const parser = new ObjectParser({
@@ -47,13 +47,13 @@ function parseExecMappingsFile(
             }),
     });
     parser
-        .prop("execs")
-        .array((item) => parsed.execs.push(parseExecMapping(item)));
+    .prop("execs")
+    .array((item) => parsed.execs.push(parseExecMapping(item)));
     return parsed;
 }
 
 function parseExecMapping(parser: IObjectParserProp<any>): ExecMapping {
-    let parsed: ExecMapping = {
+    const parsed: ExecMapping = {
         win32: "",
         linux: undefined,
         darwin: undefined,

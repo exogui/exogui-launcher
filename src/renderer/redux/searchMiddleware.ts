@@ -370,8 +370,8 @@ function fuzzyStringFilterFieldFactory(filter: FieldFilter, matchAny: boolean) {
                     for (const val of filter[key]) {
                         if (
                             !(game[key as keyof IGameInfo] as string)
-                                .toLowerCase()
-                                .includes(val)
+                            .toLowerCase()
+                            .includes(val)
                         ) {
                             return false;
                         }
@@ -381,8 +381,8 @@ function fuzzyStringFilterFieldFactory(filter: FieldFilter, matchAny: boolean) {
                     for (const val of filter[key]) {
                         if (
                             (game[key as keyof IGameInfo] as string)
-                                .toLowerCase()
-                                .includes(val)
+                            .toLowerCase()
+                            .includes(val)
                         ) {
                             return true;
                         }

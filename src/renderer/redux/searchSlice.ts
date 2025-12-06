@@ -11,8 +11,8 @@ import { getOrderFunction } from "@shared/game/GameFilter";
 import { IGameInfo } from "@shared/game/interfaces";
 import { GameFilter, GamePlaylist } from "@shared/interfaces";
 import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
-import { getDefaultBooleanFilter, getDefaultCompareFilter, getDefaultFieldFilter } from '@shared/utils/search';
-import * as path from 'path';
+import { getDefaultBooleanFilter, getDefaultCompareFilter, getDefaultFieldFilter } from "@shared/utils/search";
+import * as path from "path";
 
 export type ResultsView = {
     selectedGame?: IGameInfo;
@@ -175,10 +175,7 @@ const searchSlice = createSlice({
                     ? deepCopy(payload.game)
                     : undefined;
                 if (view.selectedGame?.musicPath) {
-                    window.External.back.send<string>(
-                        BackIn.PLAY_AUDIO_FILE,
-                        path.join(window.External.config.fullExodosPath, view.selectedGame.musicPath)
-                    );
+                    window.External.back.send(BackIn.PLAY_AUDIO_FILE, path.join(window.External.config.fullExodosPath, view.selectedGame.musicPath));
                 }
             }
         },

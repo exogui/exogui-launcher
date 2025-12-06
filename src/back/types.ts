@@ -1,22 +1,24 @@
-import { MessageBoxOptions, OpenExternalOptions } from "electron";
-import { EventEmitter } from "events";
-import * as WebSocket from "ws";
 import { BackInit, WrappedRequest } from "@shared/back/types";
 import { IAppConfigData } from "@shared/config/interfaces";
 import { IGameInfo } from "@shared/game/interfaces";
 import { ExecMapping } from "@shared/interfaces";
 import { ILogEntry, ILogPreEntry } from "@shared/Log/interface";
+import { IAppCommandsMappingData } from "@shared/mappings/interfaces";
 import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import { IAppPreferencesData } from "@shared/preferences/interfaces";
 import { Theme } from "@shared/ThemeFile";
+import { MessageBoxOptions, OpenExternalOptions } from "electron";
+import { EventEmitter } from "events";
+import * as WebSocket from "ws";
 import { FileServer } from "./backend/fileServer";
 import { PlaylistManager } from "./playlist/PlaylistManager";
-import { IAppCommandsMappingData } from "@shared/mappings/interfaces";
+import { SocketServer } from "./SocketServer";
 import { VlcPlayer } from "./VlcPlayer";
 
 export type BackState = {
     isInitialized: boolean;
     isExit: boolean;
+    socketServer: SocketServer;
     server: WebSocket.Server;
     fileServer?: FileServer;
     secret: string;
@@ -59,7 +61,7 @@ type MessageEmitter = EmitterPart<string, (request: WrappedRequest) => void> &
 type InitEmitter = EmitterPart<BackInit, () => void> & EventEmitter;
 
 interface EmitterPart<
-    E extends string | number | Symbol,
+    E extends string | number | symbol,
     F extends (...args: any[]) => void
 > {
     on(event: E, listener: F): this;

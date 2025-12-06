@@ -11,20 +11,20 @@ export type PlaylistItemContentProps = {
 };
 
 export function PlaylistItemContent(props: PlaylistItemContentProps) {
-	const strings = englishTranslation.playlist;
-	let className = "playlist-list-content";
+    const strings = englishTranslation.playlist;
+    const className = "playlist-list-content";
 
-	return (
-		<div className={className}>
-			<div className="playlist-list-content__inner">
-				<InputField
-					text={props.playlist.description}
-					placeholder={strings.noDescription}
-					className="playlist-list-content__description"
-					onChange={props.onDescriptionChange}
-					multiline={true}
-				/>
-			</div>
-		</div>
-	);
+    return (
+        <div className={className}>
+            <div className="playlist-list-content__inner">
+                <InputField
+                    text={props.playlist.description}
+                    placeholder={strings.noDescription}
+                    className="playlist-list-content__description"
+                    onChange={props.onDescriptionChange}
+                    multiline={true}
+                />
+            </div>
+        </div>
+    );
 }

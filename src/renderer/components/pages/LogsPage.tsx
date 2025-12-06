@@ -1,14 +1,13 @@
-import * as React from "react";
-import { BackOut, WrappedResponse } from "@shared/back/types";
+import { englishTranslation } from "@renderer/lang/en";
 import { ArgumentTypesOf } from "@shared/interfaces";
 import { stringifyLogEntries } from "@shared/Log/LogCommon";
 import { memoizeOne } from "@shared/memoize";
 import { updatePreferencesData } from "@shared/preferences/util";
 import { shallowStrictEquals } from "@shared/Util";
+import * as React from "react";
 import { WithPreferencesProps } from "../../containers/withPreferences";
 import { Dropdown } from "../Dropdown";
 import { LogData } from "../LogData";
-import { englishTranslation } from "@renderer/lang/en";
 
 type OwnProps = {};
 
@@ -35,14 +34,6 @@ export class LogsPage extends React.Component<LogsPageProps> {
         const logEntries = [...window.External.log.entries];
         const filter = { ...this.props.preferencesData.showLogSource };
         return this.stringifyLogEntriesMemo(logEntries, filter);
-    }
-
-    componentDidMount() {
-        window.External.back.on("message", this.onMessage);
-    }
-
-    componentWillUnmount() {
-        window.External.back.off("message", this.onMessage);
     }
 
     render() {
@@ -147,12 +138,6 @@ export class LogsPage extends React.Component<LogsPageProps> {
                 [label]: !getBoolean(showLogSource[label]),
             }),
         });
-    };
-
-    onMessage = (response: WrappedResponse): void => {
-        if (response.type === BackOut.LOG_ENTRY_ADDED) {
-            this.forceUpdate();
-        }
     };
 }
 

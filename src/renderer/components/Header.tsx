@@ -1,16 +1,16 @@
+import { faBars } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { englishTranslation } from "@renderer/lang/en";
+import { ExodosResources } from "@renderer/util/exoResources";
+import { BackIn } from "@shared/back/types";
 import { getLibraryItemTitle } from "@shared/library/util";
+import { throttle } from "@shared/utils/throttle";
+import { MenuItemConstructorOptions } from "electron";
 import * as React from "react";
-import { Link, Routes, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Paths } from "../Paths";
 import { joinLibraryRoute, openContextMenu } from "../Util";
 import { WithPreferencesProps } from "../containers/withPreferences";
-import { MenuItemConstructorOptions } from "electron";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBars } from "@fortawesome/free-solid-svg-icons";
-import { ExodosResources } from "@renderer/util/exoResources";
-import { throttle } from "@shared/utils/throttle";
-import { BackIn, LaunchExodosContentData } from "@shared/back/types";
 
 type OwnProps = {
     exodosResources: ExodosResources;
@@ -40,14 +40,14 @@ export function Header(props: HeaderProps) {
             submenu: resources.map((r) =>
                 r === null
                     ? {
-                          type: "separator",
-                      }
+                        type: "separator",
+                    }
                     : {
-                          label: r.label,
-                          click() {
-                              onLaunchCommand(r.filepath);
-                          },
-                      }
+                        label: r.label,
+                        click() {
+                            onLaunchCommand(r.filepath);
+                        },
+                    }
             ),
         };
     });
@@ -103,7 +103,5 @@ function MenuItem({ title, link }: { title: string; link: string }) {
 }
 
 export const onLaunchCommand = throttle((path: string): void => {
-    window.External.back.send<LaunchExodosContentData>(BackIn.LAUNCH_COMMAND, {
-        path,
-    });
+    window.External.back.send(BackIn.LAUNCH_COMMAND, path);
 }, 500);

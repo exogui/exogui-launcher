@@ -18,7 +18,6 @@ export type AppRouterProps = {
     gamesTotal: number;
     playlists: GamePlaylist[];
     appPaths: Record<string, string>;
-    onLaunchGame: (gameId: string) => void;
     playlistIconCache: Record<string, string>;
     libraries: string[];
     localeCode: string;
@@ -45,12 +44,10 @@ export class AppRouter extends React.Component<AppRouterProps> {
             gameScale: this.props.gameScale,
             gameLayout: this.props.gameLayout,
             gameLibrary: this.props.gameLibrary,
-            refreshKey: this.props.currentGameRefreshKey,
         };
         const configProps: ConnectedConfigPageProps = {
             themeList: this.props.themeList,
             platforms: this.props.libraries,
-            localeCode: this.props.localeCode,
         };
         return (
             <Routes>

@@ -54,7 +54,7 @@ function loadAddAppsDirectory(game: IGameInfo, addAppsDir: string) {
 
         for (const file of files.filter((f) => {
             const extension = f.name.split(".")?.[1]?.toLowerCase() ?? "";
-            return extension && f.isFile() && (process.platform === 'win32' || allowedExtensions.has(extension));
+            return extension && f.isFile() && (process.platform === "win32" || allowedExtensions.has(extension));
         })) {
             console.log(relativePathForAddApps);
             console.log(file.name);
@@ -85,7 +85,7 @@ function createAddApp(
         window.External.config.fullExodosPath,
         ""
     );
-    const filename = filepath.split(process.platform === 'win32' ? "\\" : "/").pop() ?? "Unknown";
+    const filename = filepath.split(process.platform === "win32" ? "\\" : "/").pop() ?? "Unknown";
     const name = filename.split(".")[0];
     const id = getExtrasId(game.id, filepath);
     return {
@@ -93,7 +93,7 @@ function createAddApp(
         applicationPath: relativePath,
         autoRunBefore: false,
         gameId: game.id,
-        launchCommand: ``,
+        launchCommand: "",
         name,
         waitForExit: false,
     };
@@ -111,30 +111,30 @@ export function createManualsWatcher(platform: string): chokidar.FSWatcher {
     });
 
     watcher
-        .on("add", (path) => {
-            console.debug(`Manual ${path} added.`);
-            const relativePath = path.replace(
-                window.External.config.fullExodosPath,
-                ""
-            );
-            const title = relativePath.split("/").pop()?.split(".")[0];
-            if (title) {
-                const game = getGameByTitle(title);
-                if (game) {
-                    console.debug(
-                        `Found the game for the new manual. Updating game ${title}`
-                    );
-                    const updatedGame = deepCopy(game);
-                    updatedGame.manualPath = relativePath;
-                    store.dispatch(
-                        updateGame({
-                            game: updatedGame,
-                        })
-                    );
-                }
+    .on("add", (path) => {
+        console.debug(`Manual ${path} added.`);
+        const relativePath = path.replace(
+            window.External.config.fullExodosPath,
+            ""
+        );
+        const title = relativePath.split("/").pop()?.split(".")[0];
+        if (title) {
+            const game = getGameByTitle(title);
+            if (game) {
+                console.debug(
+                    `Found the game for the new manual. Updating game ${title}`
+                );
+                const updatedGame = deepCopy(game);
+                updatedGame.manualPath = relativePath;
+                store.dispatch(
+                    updateGame({
+                        game: updatedGame,
+                    })
+                );
             }
-        })
-        .on("error", (error) => console.log(`Watcher error: ${error}`));
+        }
+    })
+    .on("error", (error) => console.log(`Watcher error: ${error}`));
 
     return watcher;
 }

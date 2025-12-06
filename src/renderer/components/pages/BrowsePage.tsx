@@ -1,15 +1,24 @@
-import * as React from "react";
-import { BackIn, LaunchGameData } from "@shared/back/types";
+import { englishTranslation } from "@renderer/lang/en";
+import {
+    forceSearch,
+    selectGame,
+    selectPlaylist,
+} from "@renderer/redux/searchSlice";
+import { RootState } from "@renderer/redux/store";
+import { openGameConfigDirectory } from "@renderer/util/games";
+import { BackIn } from "@shared/back/types";
 import { BrowsePageLayout } from "@shared/BrowsePageLayout";
-import { throttle } from "@shared/utils/throttle";
 import { IAdditionalApplicationInfo, IGameInfo } from "@shared/game/interfaces";
 import { GamePlaylist, GamePlaylistEntry } from "@shared/interfaces";
 import { memoizeOne } from "@shared/memoize";
 import { updatePreferencesData } from "@shared/preferences/util";
 import { formatString } from "@shared/utils/StringFormatter";
+import { throttle } from "@shared/utils/throttle";
+import { MenuItemConstructorOptions } from "electron";
+import * as React from "react";
+import { ConnectedProps, connect } from "react-redux";
 import { ConnectedLeftBrowseSidebar } from "../../containers/ConnectedLeftBrowseSidebar";
 import { ConnectedRightBrowseSidebar } from "../../containers/ConnectedRightBrowseSidebar";
-import * as path from "path";
 import {
     WithPreferencesProps,
     withPreferences,
@@ -20,18 +29,7 @@ import { GameList } from "../GameList";
 import { GameOrderChangeEvent } from "../GameOrder";
 import { InputElement } from "../InputField";
 import { ResizableSidebar, SidebarResizeEvent } from "../ResizableSidebar";
-import { englishTranslation } from "@renderer/lang/en";
-import { RootState } from "@renderer/redux/store";
-import { ConnectedProps, connect } from "react-redux";
-import {
-    forceSearch,
-    selectGame,
-    selectPlaylist,
-} from "@renderer/redux/searchSlice";
 import { SearchBar } from "../SearchBar";
-import { MenuItemConstructorOptions } from "electron";
-import { fixSlashes } from "@shared/Util";
-import { openGameConfigDirectory } from "@renderer/util/games";
 
 export type BrowsePageProps = {
     playlists: GamePlaylist[];
@@ -45,8 +43,6 @@ export type BrowsePageProps = {
     gameLayout: BrowsePageLayout;
     /** "Route" of the currently selected library (empty string means no library). */
     gameLibrary: string;
-    /** Key to force game refresh */
-    refreshKey: number;
 };
 
 export type BrowsePageState = {
@@ -261,7 +257,6 @@ class BrowsePage extends React.Component<
                         currentGame={selectedGame}
                         currentAddApps={selectedAddApps}
                         currentPlaylistNotes={this.state.currentPlaylistNotes}
-                        currentLibrary={this.props.gameLibrary}
                         gamePlaylistEntry={gamePlaylistEntry}
                         onGameLaunch={this.onGameLaunch}
                         onGameLaunchSetup={this.onGameLaunchSetup}
@@ -341,14 +336,14 @@ class BrowsePage extends React.Component<
 
     getGameBrowserDivWidth(): number {
         if (!document.defaultView) {
-            throw new Error('"document.defaultView" missing.');
+            throw new Error("\"document.defaultView\" missing.");
         }
         if (!this.gameBrowserRef.current) {
-            throw new Error('"game-browser" div is missing.');
+            throw new Error("\"game-browser\" div is missing.");
         }
         return parseInt(
             document.defaultView.getComputedStyle(this.gameBrowserRef.current)
-                .width || "",
+            .width || "",
             10
         );
     }
@@ -368,10 +363,7 @@ class BrowsePage extends React.Component<
         const game = this.props.games.find((g) => g.id === gameId);
         const addApps = this.props.addApps.filter((a) => a.gameId === gameId);
         if (game) {
-            window.External.back.send<LaunchGameData>(BackIn.LAUNCH_GAME, {
-                game,
-                addApps,
-            });
+            window.External.back.send(BackIn.LAUNCH_GAME, game, addApps);
         }
     }, 500);
 
@@ -379,23 +371,14 @@ class BrowsePage extends React.Component<
         const game = this.props.games.find((g) => g.id === gameId);
         const addApps = this.props.addApps.filter((a) => a.gameId === gameId);
         if (game) {
-            window.External.back.send<LaunchGameData>(
-                BackIn.LAUNCH_GAME_SETUP,
-                {
-                    game,
-                    addApps,
-                }
-            );
+            window.External.back.send(BackIn.LAUNCH_GAME_SETUP, game, addApps);
         }
     }, 500);
 
     onAddAppLaunch = throttle((addApp: IAdditionalApplicationInfo): void => {
         const game = this.props.games.find((g) => g.id === addApp.gameId);
         if (game) {
-            window.External.back.send<LaunchGameData>(BackIn.LAUNCH_ADDAPP, {
-                game,
-                addApp,
-            });
+            window.External.back.send(BackIn.LAUNCH_ADDAPP, game, addApp);
         }
     }, 500);
 
@@ -412,7 +395,7 @@ class BrowsePage extends React.Component<
             } else if (key.length === 1) {
                 // (Single character - add it to the search string)
                 const timedOut = updateTime.call(this);
-                let newString: string =
+                const newString: string =
                     (timedOut ? "" : this.state.quickSearch) + key;
                 this.setState({ quickSearch: newString });
             }

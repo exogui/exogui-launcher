@@ -44,10 +44,10 @@ function parsePlatformsFile(data: any): PlatformsFile {
             : [data.Platform]
         : [];
     const platforms = platformsRaw
-        .map((platform: any) => platform.Name ?? "")
-        // Fix for the Magazines which have incorrect encoding of the ampersand character
-        .map((p: string) => p.replace("&amp;", "&"))
-        .filter((p: string) => !!p);
+    .map((platform: any) => platform.Name ?? "")
+    // Fix for the Magazines which have incorrect encoding of the ampersand character
+    .map((p: string) => p.replace("&amp;", "&"))
+    .filter((p: string) => !!p);
 
     const mediaRaw = data.PlatformFolder
         ? Array.isArray(data.PlatformFolder)
@@ -55,14 +55,14 @@ function parsePlatformsFile(data: any): PlatformsFile {
             : [data.PlatformFolder]
         : [];
     const media = mediaRaw
-        .map((m: any) => {
-            return {
-                type: m.MediaType,
-                path: m.FolderPath,
-                platform: m.Platform,
-            } as MediaFolder;
-        })
-        .filter((m: MediaFolder) => !!m.path && !!m.platform);
+    .map((m: any) => {
+        return {
+            type: m.MediaType,
+            path: m.FolderPath,
+            platform: m.Platform,
+        } as MediaFolder;
+    })
+    .filter((m: MediaFolder) => !!m.path && !!m.platform);
     return { platforms, media };
 }
 
@@ -115,9 +115,9 @@ export const updateInstalledField = async (
                             targetGameFound && tempLine.includes("<Installed>");
                         const lineToSave = shouldUpdateLine
                             ? tempLine.replace(
-                                  /<Installed>.*<\/Installed>/,
-                                  `<Installed>${newValue}</Installed>`
-                              )
+                                /<Installed>.*<\/Installed>/,
+                                `<Installed>${newValue}</Installed>`
+                            )
                             : tempLine;
                         writeStream.write(`${lineToSave}${newLineCharacters}`);
                     }

@@ -86,7 +86,7 @@ export function difObjects<T>(
     b: DeepPartial<T>
 ): DeepPartial<T> | undefined {
     let dif: DeepPartial<T> | undefined;
-    for (let key in template) {
+    for (const key in template) {
         if (a[key] !== b[key] && b[key] !== undefined) {
             if (
                 typeof template[key] === "object" &&

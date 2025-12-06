@@ -1,15 +1,18 @@
 import { OpenDialogOptions } from "electron";
-import { SharedSocket } from "./back/SharedSocket";
+import { SocketClient } from "./back/SocketClient";
 import { IAppConfigData } from "./config/interfaces";
 import { ILogEntry } from "./Log/interface";
-import { IAppPreferencesData } from "./preferences/interfaces";
 import { IAppCommandsMappingData } from "./mappings/interfaces";
+import { IAppPreferencesData } from "./preferences/interfaces";
 import { Theme } from "./ThemeFile";
 
 /** Recursively set all properties as optional. */
 export type DeepPartial<T> = {
     [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
 };
+
+/** Type for all global logging functions */
+export type LogFunc = (source: string, message: string) => ILogEntry;
 
 /** Subtract the properties of U from T. */
 export type Subtract<T, U extends object> = Pick<T, Exclude<keyof T, keyof U>>;
@@ -73,7 +76,7 @@ export interface IMainWindowExternal {
     isBackRemote: boolean;
 
     /** Socket to the back API. */
-    back: SharedSocket<WebSocket>;
+    back: SocketClient<WebSocket>;
 
     /** Port of the back file server. */
     fileServerPort: number;
@@ -89,7 +92,7 @@ export interface IMainWindowExternal {
      * Wait for the preload to initialize.
      * @returns A promise that resolves when initialization is complete, or nothing if already initialized.
      */
-    waitUntilInitialized(): Promise<void> | void;
+    waitUntilInitialized: () => Promise<void>;
 }
 
 /** Callback for Electron.dialog.showOpenDialog */
