@@ -3,11 +3,7 @@ import { BrowsePageLayout } from "@shared/BrowsePageLayout";
 import { setTheme } from "@shared/Theme";
 import { Theme } from "@shared/ThemeFile";
 import { getFileServerURL } from "@shared/Util";
-import {
-    BackIn,
-    BackInit,
-    BackOut
-} from "@shared/back/types";
+import { BackIn, BackInit, BackOut } from "@shared/back/types";
 import { APP_TITLE } from "@shared/constants";
 import { ExodosBackendInfo, GamePlaylist, WindowIPC } from "@shared/interfaces";
 import { getLibraryItemTitle } from "@shared/library/util";
@@ -41,6 +37,7 @@ const mapState = (state: RootState) => ({
     totalGames: state.gamesState.totalGames,
     gamesLoaded: state.gamesState.initState,
     libraries: state.gamesState.libraries,
+    gamesErrorMessage: state.gamesState.errorMessage,
 });
 
 const mapDispatch = {
@@ -78,6 +75,8 @@ export type AppState = {
     exodosBackendInfo: ExodosBackendInfo | undefined;
     /** Key to force refresh of current game */
     currentGameRefreshKey: number;
+    /** Whether the splash screen error has been dismissed */
+    errorDismissed: boolean;
 };
 
 class App extends React.Component<AppProps, AppState> {
@@ -113,6 +112,7 @@ class App extends React.Component<AppProps, AppState> {
                 Documents: [],
                 Scripts: [],
             },
+            errorDismissed: false,
         };
 
         // Initialize app
@@ -210,41 +210,52 @@ class App extends React.Component<AppProps, AppState> {
 
         this.props.initializeGames();
 
-        window.External.back.register(BackOut.INIT_EVENT, async (event, data) => {
-            const loaded = { ...this.state.loaded };
-            for (const index of data) {
-                loaded[index] = true;
+        window.External.back.register(
+            BackOut.INIT_EVENT,
+            async (event, data) => {
+                const loaded = { ...this.state.loaded };
+                for (const index of data) {
+                    loaded[index] = true;
 
-                switch (index) {
-                    case BackInit.PLAYLISTS: {
-                        const playlists = await window.External.back.request(BackIn.GET_PLAYLISTS);
-                        this.setState({
-                            playlists,
-                        });
-                        this.cachePlaylistIcons(
-                            playlists
-                        );
-                        break;
+                    switch (index) {
+                        case BackInit.PLAYLISTS: {
+                            const playlists =
+                                await window.External.back.request(
+                                    BackIn.GET_PLAYLISTS
+                                );
+                            this.setState({
+                                playlists,
+                            });
+                            this.cachePlaylistIcons(playlists);
+                            break;
+                        }
                     }
                 }
+
+                this.setState({ loaded });
             }
+        );
 
-            this.setState({ loaded });
-        });
+        window.External.back.register(
+            BackOut.LOG_ENTRY_ADDED,
+            (event, entry, index) => {
+                window.External.log.entries[
+                index - window.External.log.offset
+                ] = entry;
+            }
+        );
 
-        window.External.back.register(BackOut.LOG_ENTRY_ADDED, (event, entry, index) => {
-            window.External.log.entries[index - window.External.log.offset] = entry;
-        });
-
-        window.External.back.register(BackOut.LOCALE_UPDATE, (event, localeCode) => {
-            this.setState({ localeCode });
-        });
+        window.External.back.register(
+            BackOut.LOCALE_UPDATE,
+            (event, localeCode) => {
+                this.setState({ localeCode });
+            }
+        );
 
         window.External.back.register(BackOut.GAME_CHANGE, () => {
             // We don't track selected game here, so we'll just force a game update anyway
             this.setState({
-                currentGameRefreshKey:
-                    this.state.currentGameRefreshKey + 1,
+                currentGameRefreshKey: this.state.currentGameRefreshKey + 1,
             });
         });
 
@@ -254,36 +265,40 @@ class App extends React.Component<AppProps, AppState> {
             }
         });
 
-        window.External.back.register(BackOut.THEME_LIST_CHANGE, (event, themeList) => {
-            this.setState({ themeList });
-        });
-
-        window.External.back.register(BackOut.PLAYLIST_REMOVE, (event, filename) => {
-            const index = this.state.playlists.findIndex(
-                (p) => p.filename === filename
-            );
-            if (index >= 0) {
-                const playlists = [...this.state.playlists];
-                playlists.splice(index, 1);
-
-                const cache: Record<string, string> = {
-                    ...this.state.playlistIconCache,
-                };
-                const filename =
-                    this.state.playlists[index].filename;
-                if (filename in cache) {
-                    delete cache[filename];
-                }
-
-                this.setState({
-                    playlists: playlists,
-                    playlistIconCache: cache,
-                });
+        window.External.back.register(
+            BackOut.THEME_LIST_CHANGE,
+            (event, themeList) => {
+                this.setState({ themeList });
             }
-        });
+        );
 
-        window.External.back.request(BackIn.INIT_LISTEN)
-        .then((data) => {
+        window.External.back.register(
+            BackOut.PLAYLIST_REMOVE,
+            (event, filename) => {
+                const index = this.state.playlists.findIndex(
+                    (p) => p.filename === filename
+                );
+                if (index >= 0) {
+                    const playlists = [...this.state.playlists];
+                    playlists.splice(index, 1);
+
+                    const cache: Record<string, string> = {
+                        ...this.state.playlistIconCache,
+                    };
+                    const filename = this.state.playlists[index].filename;
+                    if (filename in cache) {
+                        delete cache[filename];
+                    }
+
+                    this.setState({
+                        playlists: playlists,
+                        playlistIconCache: cache,
+                    });
+                }
+            }
+        );
+
+        window.External.back.request(BackIn.INIT_LISTEN).then((data) => {
             const nextLoaded = { ...this.state.loaded };
             for (const key of data) {
                 nextLoaded[key] = true;
@@ -311,10 +326,12 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     render() {
+        const hasError = this.props.gamesLoaded === GamesInitState.ERROR;
         const loaded =
             this.props.gamesLoaded === GamesInitState.LOADED &&
             this.state.loaded[BackInit.PLAYLISTS] &&
             this.state.loaded[BackInit.EXEC];
+        const showContent = loaded || (hasError && this.state.errorDismissed);
         const libraryPath =
             getBrowseSubPath(this.props.location.pathname) ??
             Object.keys(this.props.searchState.views)?.[0] ??
@@ -355,6 +372,8 @@ class App extends React.Component<AppProps, AppState> {
                                 this.state.loaded[BackInit.PLAYLISTS]
                             }
                             miscLoaded={this.state.loaded[BackInit.EXEC]}
+                            errorMessage={this.props.gamesErrorMessage}
+                            onGoToConfig={this.onGoToConfig}
                         />
                         {/* Title-bar (if enabled) */}
                         {window.External.config.data.useCustomTitlebar ? (
@@ -363,7 +382,7 @@ class App extends React.Component<AppProps, AppState> {
                             />
                         ) : undefined}
                         {/* "Content" */}
-                        {loaded ? (
+                        {showContent ? (
                             <>
                                 {/* Header */}
                                 <HeaderContainer
@@ -467,6 +486,11 @@ class App extends React.Component<AppProps, AppState> {
             browsePageShowRightSidebar:
                 !this.props.preferencesData.browsePageShowRightSidebar,
         });
+    };
+
+    private onGoToConfig = (): void => {
+        this.setState({ errorDismissed: true });
+        this.props.navigate(Paths.CONFIG.replace("/*", ""));
     };
 
     cachePlaylistIcons(playlists: GamePlaylist[]): void {

@@ -9,6 +9,7 @@ import {
     GamesInitState,
     initialize,
     setGames,
+    setInitError,
     setLibraries,
 } from "./gamesSlice";
 import { startAppListening } from "./listenerMiddleware";
@@ -38,46 +39,52 @@ export function addGamesMiddleware() {
                 return; // Already loaded
             }
 
-            const startTime = Date.now();
-            const libraries: string[] = [];
-            const collection: GameCollection = new GameCollection();
+            try {
+                const startTime = Date.now();
+                const libraries: string[] = [];
+                const collection: GameCollection = new GameCollection();
 
-            const platformsPath = path.join(
-                window.External.config.fullExodosPath,
-                window.External.config.data.platformFolderPath
-            );
-            const { platforms } = await readPlatformsFile(
-                path.join(platformsPath, "../Platforms.xml")
-            );
+                const platformsPath = path.join(
+                    window.External.config.fullExodosPath,
+                    window.External.config.data.platformFolderPath
+                );
+                const { platforms } = await readPlatformsFile(
+                    path.join(platformsPath, "../Platforms.xml")
+                );
 
-            for (const platform of platforms) {
-                try {
-                    const platformCollection = await loadPlatform(
-                        platform,
-                        platformsPath
-                    );
-                    if (platformCollection.games.length > 0) {
-                        libraries.push(platform);
+                for (const platform of platforms) {
+                    try {
+                        const platformCollection = await loadPlatform(
+                            platform,
+                            platformsPath
+                        );
+                        if (platformCollection.games.length > 0) {
+                            libraries.push(platform);
+                        }
+                        collection.push(platformCollection);
+
+                        const optionsForPlatform =
+                            platformOptions?.find((p) => p.name === platform) ??
+                            DefaultPlatformOptions;
+                        if (optionsForPlatform.watchable) {
+                            createGamesWatcher(platformCollection);
+                            createVideosWatcher(platform);
+                            createManualsWatcher(platform);
+                        }
+                    } catch (err) {
+                        console.error(`Failed to load platform ${err}`);
                     }
-                    collection.push(platformCollection);
-
-                    const optionsForPlatform =
-                        platformOptions?.find((p) => p.name === platform) ??
-                        DefaultPlatformOptions;
-                    if (optionsForPlatform.watchable) {
-                        createGamesWatcher(platformCollection);
-                        createVideosWatcher(platform);
-                        createManualsWatcher(platform);
-                    }
-                } catch (err) {
-                    console.error(`Failed to load platform ${err}`);
                 }
+                console.debug(`Load time - ${Date.now() - startTime}ms`);
+                libraries.sort();
+                listenerApi.dispatch(setLibraries(libraries));
+                listenerApi.dispatch(initializeViews(libraries));
+                listenerApi.dispatch(setGames(collection.forRedux()));
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                console.error(`Failed to initialize games: ${errorMessage}`);
+                listenerApi.dispatch(setInitError(errorMessage));
             }
-            console.debug(`Load time - ${Date.now() - startTime}ms`);
-            libraries.sort();
-            listenerApi.dispatch(setLibraries(libraries));
-            listenerApi.dispatch(initializeViews(libraries));
-            listenerApi.dispatch(setGames(collection.forRedux()));
         },
     });
 }

@@ -416,6 +416,16 @@ export const englishTranslation = {
         arcade: "Games",
         theatre: "Animations",
     },
+    splash: {
+        loading: "Loading",
+        games: "Games",
+        playlists: "Playlists",
+        misc: "Misc",
+        errorLoading: "Error Loading",
+        unknownError: "An unknown error occurred",
+        configHint: "Please check the paths on the Config page.",
+        goToConfig: "Go to Config",
+    },
     upgrades: {
         infinity: "eXoDOS Infinity",
         infinityDesc: "Required files. Adds support for Flash games.",

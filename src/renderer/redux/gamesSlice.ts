@@ -9,12 +9,14 @@ export enum GamesInitState {
     WAITING = 0,
     LOADING,
     LOADED,
+    ERROR,
 }
 
 export type GamesState = {
     initState: GamesInitState;
     totalGames: number;
     libraries: string[];
+    errorMessage?: string;
 } & IGameCollection;
 
 export type GameUpdatedAction = {
@@ -35,6 +37,7 @@ const initialState: GamesState = {
     initState: GamesInitState.WAITING,
     totalGames: 0,
     libraries: [],
+    errorMessage: undefined,
 };
 
 const gamesSlice = createSlice({
@@ -78,6 +81,13 @@ const gamesSlice = createSlice({
         ) => {
             state.addApps = [...state.addApps, payload.addApp];
         },
+        setInitError: (
+            state: GamesState,
+            { payload }: PayloadAction<string>
+        ) => {
+            state.initState = GamesInitState.ERROR;
+            state.errorMessage = payload;
+        },
     },
 });
 
@@ -87,5 +97,6 @@ export const {
     setGames,
     updateGame,
     addAddAppsForGame,
+    setInitError,
 } = gamesSlice.actions;
 export default gamesSlice.reducer;
